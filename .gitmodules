@@ -1,21 +1,28 @@
 [submodule "ride-request"]
 	path = ride-request
 	url = https://github.com/hendafarhani/ride-request.git
+	branch = main
 [submodule "centralized-config"]
 	path = centralized-config
 	url = https://github.com/hendafarhani/centralized-config.git
+	branch = main
 [submodule "discovery"]
 	path = discovery
 	url = https://github.com/hendafarhani/discovery.git
+	branch = main
 [submodule "gateway"]
 	path = gateway
 	url = https://github.com/hendafarhani/gateway.git
+	branch = main
 [submodule "location-rider"]
 	path = location-rider
 	url = https://github.com/hendafarhani/location-rider.git
+	branch = main
 [submodule "location-saver"]
 	path = location-saver
 	url = https://github.com/hendafarhani/location-saver.git
+	branch = main
 [submodule "mysql-init"]
 	path = mysql-init
 	url = https://github.com/hendafarhani/mysql-init.git
+	branch = main
