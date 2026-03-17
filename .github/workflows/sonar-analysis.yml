@@ -32,8 +32,8 @@ jobs:
           java-version: ${{ inputs.java_version }}
           cache: maven
 
-      - name: Run Maven tests
-        run: mvn -B test
+      - name: Run Maven verify
+        run: mvn -B clean verify
 
       - name: Sonar scan
         env:
