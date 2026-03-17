@@ -1,7 +1,6 @@
 name: Reusable Sonar
 
 on:
-  workflow_dispatch:
   workflow_call:
     inputs:
       java_version:
