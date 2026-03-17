@@ -1,6 +1,9 @@
 name: Reusable Maven Build
 
 on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
   workflow_call:
     inputs:
       java_version:
