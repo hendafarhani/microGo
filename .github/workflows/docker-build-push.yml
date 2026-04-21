@@ -59,7 +59,6 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.REGISTRY_REPOSITORY }}/microgo-${{ matrix.service }}
           tags: |
             type=raw,value=latest
-            type=sha
 
       - name: Build and push image
         uses: docker/build-push-action@v6
