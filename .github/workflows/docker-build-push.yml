@@ -52,19 +52,13 @@ jobs:
           username: ${{ secrets.DOCR_USERNAME }}
           password: ${{ secrets.DOCR_TOKEN }}
 
-      - name: Extract image metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_REPOSITORY }}/microgo-${{ matrix.service }}
-          tags: |
-            type=raw,value=latest
-
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
           context: ./${{ matrix.service }}
           file: ./${{ matrix.service }}/Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64
+          tags: ${{ env.REGISTRY }}/${{ env.REGISTRY_REPOSITORY }}/microgo-${{ matrix.service }}:latest
+          provenance: false
+          sbom: false
