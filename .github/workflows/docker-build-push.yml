@@ -56,10 +56,10 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_REPOSITORY }}/microgo-${{ matrix.service }}
+          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_REPOSITORY }}/microgo
           tags: |
-            type=raw,value=latest
-            type=sha
+            type=raw,value=${{ matrix.service }}-latest
+            type=raw,value=${{ matrix.service }}-{{sha}}
 
       - name: Build and push image
         uses: docker/build-push-action@v6
