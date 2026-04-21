@@ -53,6 +53,7 @@ jobs:
           password: ${{ secrets.DOCR_TOKEN }}
 
       - name: Build and push image
+        id: build_image
         uses: docker/build-push-action@v6
         with:
           context: ./${{ matrix.service }}
@@ -60,5 +61,25 @@ jobs:
           push: true
           platforms: linux/amd64
           tags: ${{ env.REGISTRY }}/${{ env.REGISTRY_REPOSITORY }}/microgo-${{ matrix.service }}:latest
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.repository }}
           provenance: false
           sbom: false
+
+      - name: Save image digest map
+        run: |
+          mkdir -p digest-map
+          cat > digest-map/${{ matrix.service }}.txt <<EOF
+          service=${{ matrix.service }}
+          image=${{ env.REGISTRY }}/${{ env.REGISTRY_REPOSITORY }}/microgo-${{ matrix.service }}:latest
+          digest=${{ steps.build_image.outputs.digest }}
+          git_sha=${{ github.sha }}
+          run_id=${{ github.run_id }}
+          EOF
+
+      - name: Upload digest map artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-map-${{ matrix.service }}
+          path: digest-map/${{ matrix.service }}.txt
