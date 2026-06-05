@@ -1,0 +1,3 @@
+{{ include "common.deployment" (dict "root" . "component" .Values.component) }}
+---
+{{ include "common.service" (dict "root" . "component" .Values.component) }}

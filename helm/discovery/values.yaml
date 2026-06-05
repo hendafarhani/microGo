@@ -1,0 +1,39 @@
+fullnameOverride: discovery
+
+namespace:
+  name: microgo-dev
+
+global:
+  imagePullPolicy: IfNotPresent
+  imagePullSecrets: []
+
+component:
+  name: discovery
+  fullnameOverride: discovery
+  replicaCount: 1
+  containerPort: 8082
+  image:
+    repository: registry.digitalocean.com/hendafarhani-microgo-registry/microgo-discovery
+    tag: latest
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 8082
+    targetPort: 8082
+  env:
+    - name: SERVER_PORT
+      value: "8082"
+    - name: SPRING_CONFIG_IMPORT
+      value: optional:configserver:http://centralized-config:8080
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 8082
+    initialDelaySeconds: 20
+    periodSeconds: 10
+  livenessProbe:
+    tcpSocket:
+      port: 8082
+    initialDelaySeconds: 40
+    periodSeconds: 15
+  resources: {}

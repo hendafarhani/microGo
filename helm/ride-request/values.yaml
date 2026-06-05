@@ -1,0 +1,47 @@
+fullnameOverride: ride-request
+
+namespace:
+  name: microgo-dev
+
+global:
+  imagePullPolicy: IfNotPresent
+  imagePullSecrets: []
+
+component:
+  name: ride-request
+  fullnameOverride: ride-request
+  replicaCount: 1
+  containerPort: 8081
+  image:
+    repository: registry.digitalocean.com/hendafarhani-microgo-registry/microgo-ride-request
+    tag: latest
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 8081
+    targetPort: 8081
+  configMap:
+    enabled: true
+    data:
+      SPRING_CLOUD_CONFIG_URI: http://centralized-config:8080
+      SPRING_CLOUD_CONFIG_NAME: ride-request
+      SPRING_CONFIG_IMPORT: optional:configserver:http://centralized-config:8080
+  secret:
+    enabled: false
+    stringData: {}
+  env:
+    - name: SERVER_PORT
+      value: "8081"
+    - name: PORT
+      value: "8081"
+  readinessProbe:
+    tcpSocket:
+      port: 8081
+    initialDelaySeconds: 20
+    periodSeconds: 10
+  livenessProbe:
+    tcpSocket:
+      port: 8081
+    initialDelaySeconds: 40
+    periodSeconds: 15
+  resources: {}

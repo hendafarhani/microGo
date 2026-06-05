@@ -1,0 +1,4 @@
+component:
+  replicaCount: 2
+  ingress:
+    enabled: true

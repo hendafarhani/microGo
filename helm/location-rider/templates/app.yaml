@@ -1,0 +1,11 @@
+{{- if and .Values.component.configMap .Values.component.configMap.enabled }}
+{{ include "common.configmap" (dict "root" . "component" .Values.component) }}
+---
+{{- end }}
+{{- if and .Values.component.secret .Values.component.secret.enabled }}
+{{ include "common.secret" (dict "root" . "component" .Values.component) }}
+---
+{{- end }}
+{{ include "common.deployment" (dict "root" . "component" .Values.component) }}
+---
+{{ include "common.service" (dict "root" . "component" .Values.component) }}

@@ -1,0 +1,7 @@
+{{ include "common.deployment" (dict "root" . "component" .Values.component) }}
+---
+{{ include "common.service" (dict "root" . "component" .Values.component) }}
+{{- if .Values.component.ingress.enabled }}
+---
+{{ include "common.ingress" (dict "root" . "component" .Values.component) }}
+{{- end }}

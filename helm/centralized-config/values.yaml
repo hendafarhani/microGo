@@ -1,0 +1,39 @@
+fullnameOverride: centralized-config
+
+namespace:
+  name: microgo-dev
+
+global:
+  imagePullPolicy: IfNotPresent
+  imagePullSecrets: []
+
+component:
+  name: centralized-config
+  fullnameOverride: centralized-config
+  replicaCount: 1
+  containerPort: 8080
+  image:
+    repository: registry.digitalocean.com/hendafarhani-microgo-registry/microgo-centralized-config
+    tag: latest
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 8080
+    targetPort: 8080
+  env:
+    - name: SERVER_PORT
+      value: "8080"
+    - name: SPRING_PROFILES_ACTIVE
+      value: native
+  readinessProbe:
+    httpGet:
+      path: /ride-request/default
+      port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  livenessProbe:
+    tcpSocket:
+      port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 15
+  resources: {}
