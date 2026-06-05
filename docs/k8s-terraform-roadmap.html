@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kubernetes and Terraform POC Roadmap</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 48px;
+      color: #1f2937;
+      line-height: 1.5;
+    }
+    h1, h2 {
+      color: #111827;
+      margin-bottom: 0.3em;
+    }
+    h1 {
+      font-size: 28px;
+      border-bottom: 2px solid #d1d5db;
+      padding-bottom: 10px;
+    }
+    h2 {
+      font-size: 20px;
+      margin-top: 28px;
+    }
+    p {
+      margin: 8px 0;
+    }
+    ul {
+      margin-top: 8px;
+      margin-bottom: 8px;
+    }
+    li {
+      margin: 4px 0;
+    }
+    .section {
+      page-break-inside: avoid;
+    }
+    .muted {
+      color: #4b5563;
+    }
+  </style>
+</head>
+<body>
+  <h1>Kubernetes and Terraform POC Roadmap</h1>
+  <p class="muted">Goal: understand how Kubernetes works, how Terraform helps provision the infrastructure, and deploy a public ride-sharing POC with a graphical interface.</p>
+
+  <div class="section">
+    <h2>Day 1</h2>
+    <p><strong>Set the foundation and make the target concrete.</strong></p>
+    <p>Do:</p>
+    <ul>
+      <li>Choose the cloud provider: DigitalOcean</li>
+      <li>Create or confirm your account</li>
+      <li>Create an API token</li>
+      <li>Decide your demo domain or subdomain</li>
+      <li>Install <code>terraform</code>, <code>kubectl</code>, <code>helm</code>, and <code>doctl</code></li>
+      <li>Make sure Docker image names and registry strategy are decided</li>
+    </ul>
+    <p><strong>Output by end of day:</strong> provider selected, cloud credentials ready, tools installed, and a clear deployment target with one dev cluster and one public URL.</p>
+    <p><strong>Why:</strong> this removes ambiguity before you write infrastructure.</p>
+  </div>
+
+  <div class="section">
+    <h2>Day 2</h2>
+    <p><strong>Build the Terraform skeleton.</strong></p>
+    <p>Do:</p>
+    <ul>
+      <li>Create <code>terraform/modules</code></li>
+      <li>Create <code>terraform/environments/dev</code></li>
+      <li>Add the cluster module</li>
+      <li>Add registry module</li>
+      <li>Add namespace module</li>
+      <li>Add DNS module if you already have a domain</li>
+      <li>Wire them together in <code>terraform/environments/dev</code></li>
+    </ul>
+    <p><strong>Output by end of day:</strong> valid Terraform structure and a working <code>terraform plan</code>.</p>
+    <p><strong>Why:</strong> this is where you learn how Terraform defines the cloud platform.</p>
+  </div>
+
+  <div class="section">
+    <h2>Day 3</h2>
+    <p><strong>Create the cloud infrastructure.</strong></p>
+    <p>Do:</p>
+    <ul>
+      <li>Run <code>terraform init</code>, <code>terraform plan</code>, and <code>terraform apply</code></li>
+      <li>Create the Kubernetes cluster</li>
+      <li>Configure kube access</li>
+      <li>Verify <code>kubectl get nodes</code> and <code>kubectl get ns</code></li>
+      <li>Create the namespace for the app if Terraform does not already do it</li>
+    </ul>
+    <p><strong>Output by end of day:</strong> live Kubernetes cluster, reachable from your machine, with namespace ready.</p>
+    <p><strong>Why:</strong> this is the first real milestone. Infrastructure exists.</p>
+  </div>
+
+  <div class="section">
+    <h2>Day 4</h2>
+    <p><strong>Prepare and validate Helm.</strong></p>
+    <p>Do:</p>
+    <ul>
+      <li>Go through each chart in <code>helm/</code></li>
+      <li>Run <code>helm dependency build</code></li>
+      <li>Run <code>helm template</code></li>
+      <li>Fix broken values or template issues</li>
+      <li>Ensure service hostnames for MySQL, Redis, RabbitMQ, and Kafka are consistent</li>
+    </ul>
+    <p><strong>Output by end of day:</strong> renderable charts for all services and known dependency hostnames.</p>
+    <p><strong>Why:</strong> this prevents deployment-day confusion.</p>
+  </div>
+
+  <div class="section">
+    <h2>Day 5</h2>
+    <p><strong>Install infrastructure dependencies inside Kubernetes.</strong></p>
+    <p>Do:</p>
+    <ul>
+      <li>Install MySQL</li>
+      <li>Install Redis</li>
+      <li>Install RabbitMQ</li>
+      <li>Install Kafka</li>
+      <li>Verify pods and services</li>
+      <li>Update microservice values if service names differ from expected hostnames</li>
+    </ul>
+    <p><strong>Output by end of day:</strong> infra dependencies running in cluster and app values aligned with real infra.</p>
+    <p><strong>Why:</strong> your microservices cannot run correctly before these exist.</p>
+  </div>
+
+  <div class="section">
+    <h2>Day 6</h2>
+    <p><strong>Deploy backend services.</strong></p>
+    <p>Do:</p>
+    <ul>
+      <li>Deploy <code>centralized-config</code></li>
+      <li>Deploy <code>discovery</code></li>
+      <li>Deploy <code>ride-request</code></li>
+      <li>Deploy <code>location-rider</code></li>
+      <li>Deploy <code>location-saver</code></li>
+      <li>Deploy <code>gateway</code></li>
+      <li>After each deploy, check pods and logs and fix config issues immediately</li>
+    </ul>
+    <p><strong>Output by end of day:</strong> all backend services running and <code>gateway</code> exposed publicly.</p>
+    <p><strong>Why:</strong> this is where the app becomes real in Kubernetes.</p>
+  </div>
+
+  <div class="section">
+    <h2>Day 7</h2>
+    <p><strong>Make the project demoable.</strong></p>
+    <p>Do:</p>
+    <ul>
+      <li>Add or deploy a simple frontend/UI</li>
+      <li>Connect it to the public backend endpoint</li>
+      <li>Test the happy path</li>
+      <li>Verify you can demonstrate request ride, rider-side activity, and accepted ride</li>
+      <li>Capture screenshots</li>
+      <li>Write a short architecture summary</li>
+      <li>Write a short recruiter-facing README section</li>
+    </ul>
+    <p><strong>Output by end of day:</strong> public URL, visible UI, working demo flow, and material to show recruiters.</p>
+    <p><strong>Why:</strong> this turns infrastructure work into a portfolio project.</p>
+  </div>
+
+  <div class="section">
+    <h2>What To Prioritize Every Day</h2>
+    <ul>
+      <li>Day 1: tools and provider access</li>
+      <li>Day 2: <code>terraform plan</code></li>
+      <li>Day 3: live cluster</li>
+      <li>Day 4: valid rendered charts</li>
+      <li>Day 5: infra pods running</li>
+      <li>Day 6: app backend running</li>
+      <li>Day 7: public demo URL and UI</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>What Not To Get Stuck On</h2>
+    <ul>
+      <li>Perfecting prod architecture</li>
+      <li>Managed service migrations</li>
+      <li>Advanced observability</li>
+      <li>Autoscaling</li>
+      <li>Deep Terraform abstractions</li>
+    </ul>
+    <p>For this POC, shipping matters more.</p>
+  </div>
+
+  <div class="section">
+    <h2>Success Criteria By The End</h2>
+    <ul>
+      <li>I provisioned the cloud Kubernetes infrastructure with Terraform</li>
+      <li>I deployed the microservices with Helm</li>
+      <li>I exposed the app through a public URL</li>
+      <li>I built a graphical demo for the ride-sharing flow</li>
+      <li>I can explain the architecture and deployment path</li>
+    </ul>
+  </div>
+</body>
+</html>

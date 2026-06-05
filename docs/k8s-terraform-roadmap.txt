@@ -1,0 +1,161 @@
+Kubernetes and Terraform POC Roadmap
+
+Goal: understand how Kubernetes works, how Terraform helps provision the
+infrastructure, and deploy a public ride-sharing POC with a graphical interface.
+
+Day 1
+Set the foundation and make the target concrete.
+
+Do:
+- Choose the cloud provider: DigitalOcean
+- Create or confirm your account
+- Create an API token
+- Decide your demo domain or subdomain
+- Install terraform, kubectl, helm, and doctl
+- Make sure Docker image names and registry strategy are decided
+
+Output by end of day:
+- Provider selected
+- Cloud credentials ready
+- Tools installed
+- Clear deployment target with one dev cluster and one public URL
+
+Why:
+- This removes ambiguity before you write infrastructure
+
+Day 2
+Build the Terraform skeleton.
+
+Do:
+- Create terraform/modules
+- Create terraform/environments/dev
+- Add the cluster module
+- Add registry module
+- Add namespace module
+- Add DNS module if you already have a domain
+- Wire them together in terraform/environments/dev
+
+Output by end of day:
+- Valid Terraform structure
+- terraform plan works
+
+Why:
+- This is where you learn how Terraform defines the cloud platform
+
+Day 3
+Create the cloud infrastructure.
+
+Do:
+- Run terraform init, terraform plan, and terraform apply
+- Create the Kubernetes cluster
+- Configure kube access
+- Verify kubectl get nodes and kubectl get ns
+- Create the namespace for the app if Terraform does not already do it
+
+Output by end of day:
+- Live Kubernetes cluster
+- Reachable from your machine
+- Namespace ready
+
+Why:
+- This is the first real milestone; infrastructure exists
+
+Day 4
+Prepare and validate Helm.
+
+Do:
+- Go through each chart in helm/
+- Run helm dependency build
+- Run helm template
+- Fix broken values or template issues
+- Ensure service hostnames for MySQL, Redis, RabbitMQ, and Kafka are consistent
+
+Output by end of day:
+- Renderable charts for all services
+- Known dependency hostnames
+
+Why:
+- This prevents deployment-day confusion
+
+Day 5
+Install infrastructure dependencies inside Kubernetes.
+
+Do:
+- Install MySQL
+- Install Redis
+- Install RabbitMQ
+- Install Kafka
+- Verify pods and services
+- Update microservice values if service names differ from expected hostnames
+
+Output by end of day:
+- Infra dependencies running in cluster
+- App values aligned with real infra
+
+Why:
+- Your microservices cannot run correctly before these exist
+
+Day 6
+Deploy backend services.
+
+Do:
+- Deploy centralized-config
+- Deploy discovery
+- Deploy ride-request
+- Deploy location-rider
+- Deploy location-saver
+- Deploy gateway
+- After each deploy, check pods and logs and fix config issues immediately
+
+Output by end of day:
+- All backend services running
+- gateway exposed publicly
+
+Why:
+- This is where the app becomes real in Kubernetes
+
+Day 7
+Make the project demoable.
+
+Do:
+- Add or deploy a simple frontend/UI
+- Connect it to the public backend endpoint
+- Test the happy path
+- Verify you can demonstrate request ride, rider-side activity, and accepted ride
+- Capture screenshots
+- Write a short architecture summary
+- Write a short recruiter-facing README section
+
+Output by end of day:
+- Public URL
+- Visible UI
+- Working demo flow
+- Material to show recruiters
+
+Why:
+- This turns infrastructure work into a portfolio project
+
+What To Prioritize Every Day
+- Day 1: tools and provider access
+- Day 2: terraform plan
+- Day 3: live cluster
+- Day 4: valid rendered charts
+- Day 5: infra pods running
+- Day 6: app backend running
+- Day 7: public demo URL and UI
+
+What Not To Get Stuck On
+- Perfecting prod architecture
+- Managed service migrations
+- Advanced observability
+- Autoscaling
+- Deep Terraform abstractions
+
+For this POC, shipping matters more.
+
+Success Criteria By The End
+- I provisioned the cloud Kubernetes infrastructure with Terraform
+- I deployed the microservices with Helm
+- I exposed the app through a public URL
+- I built a graphical demo for the ride-sharing flow
+- I can explain the architecture and deployment path
