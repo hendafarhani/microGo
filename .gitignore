@@ -1,0 +1,6 @@
+.DS_Store
+**/.DS_Store
+
+terraform/**/tfplan
+
+helm/**/charts/*.tgz
