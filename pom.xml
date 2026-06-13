@@ -17,6 +17,7 @@
         <module>gateway</module>
         <module>location-rider</module>
         <module>location-saver</module>
+        <module>outbox-publisher-service</module>
         <module>ride-request</module>
     </modules>
 </project>

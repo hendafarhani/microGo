@@ -21,6 +21,7 @@ jobs:
           - discovery
           - gateway
           - ride-request
+          - outbox-publisher-service
           - location-rider
           - location-saver
 

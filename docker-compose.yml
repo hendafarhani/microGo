@@ -126,6 +126,24 @@ services:
     restart:
       always
 
+  outbox-publisher-service:
+    build: ./outbox-publisher-service
+    depends_on:
+      discovery:
+        condition: service_healthy
+      centralized-config:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+    networks:
+      - app-network
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://centralized-config:8080
+    restart:
+      always
+
   location-rider:
     build: ./location-rider
     depends_on:
