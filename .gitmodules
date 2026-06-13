@@ -22,6 +22,10 @@
 	path = location-saver
 	url = https://github.com/hendafarhani/location-saver.git
 	branch = main
+[submodule "outbox-publisher-service"]
+	path = outbox-publisher-service
+	url = https://github.com/hendafarhani/outbox-publisher-service.git
+	branch = main
 [submodule "mysql-init"]
 	path = mysql-init
 	url = https://github.com/hendafarhani/mysql-init.git
