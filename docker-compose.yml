@@ -181,3 +181,23 @@ services:
       SPRING_CONFIG_IMPORT: optional:configserver:http://centralized-config:8080
     restart:
       always
+
+  driver-location-streamer:
+    build: ./driver-location-streamer
+    networks:
+      - app-network
+    depends_on:
+      discovery:
+        condition: service_healthy
+      centralized-config:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://centralized-config:8080
+      PORT: 8085
+      SERVER_PORT: 8085
+    restart:
+      always

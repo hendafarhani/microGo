@@ -1,0 +1,12 @@
+com/microgo/driver_location_streamer/model/Location$LocationBuilder.class
+com/microgo/driver_location_streamer/model/RiderData.class
+com/microgo/driver_location_streamer/kafka/serialization/RiderDataJsonDeserializer$RiderDataJsonDeserializerBuilder.class
+com/microgo/driver_location_streamer/service/DriverLocationStreamingService.class
+com/microgo/driver_location_streamer/kafka/configuration/KafkaListenerConfiguration.class
+com/microgo/driver_location_streamer/model/RiderData$RiderDataBuilder.class
+com/microgo/driver_location_streamer/kafka/handler/DriverLocationStreamHandler.class
+com/microgo/driver_location_streamer/kafka/serialization/RiderDataJsonDeserializer.class
+com/microgo/driver_location_streamer/DriverLocationStreamerApplication.class
+com/microgo/driver_location_streamer/service/serviceimpl/DriverLocationStreamingServiceImpl.class
+com/microgo/driver_location_streamer/configuration/WebSocketConfiguration.class
+com/microgo/driver_location_streamer/model/Location.class

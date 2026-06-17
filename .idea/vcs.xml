@@ -8,6 +8,7 @@
     <mapping directory="$PROJECT_DIR$/location-rider" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/location-saver" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/mysql-init" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/outbox-publisher-service" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ride-request" vcs="Git" />
   </component>
 </project>

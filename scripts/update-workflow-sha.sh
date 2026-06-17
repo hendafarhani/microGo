@@ -7,9 +7,11 @@ WORKFLOW_SHA="${1:-$(git -C "$MICROGO_ROOT" rev-parse HEAD)}"
 SERVICE_REPOS=(
   "centralized-config"
   "discovery"
+  "driver-location-streamer"
   "gateway"
   "location-rider"
   "location-saver"
+  "outbox-publisher-service"
   "ride-request"
 )
 

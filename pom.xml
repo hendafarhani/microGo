@@ -15,6 +15,7 @@
         <module>centralized-config</module>
         <module>discovery</module>
         <module>gateway</module>
+        <module>driver-location-streamer</module>
         <module>location-rider</module>
         <module>location-saver</module>
         <module>outbox-publisher-service</module>
