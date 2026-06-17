@@ -1,7 +1,0 @@
-/Users/hendafarhani/Documents/microGo/driver-location-streamer/src/test/java/com/microgo/driver_location_streamer/DriverLocationStreamerApplicationTests.java
-/Users/hendafarhani/Documents/microGo/driver-location-streamer/src/test/java/com/microgo/driver_location_streamer/configuration/WebSocketConfigurationTest.java
-/Users/hendafarhani/Documents/microGo/driver-location-streamer/src/test/java/com/microgo/driver_location_streamer/integration/DriverLocationKafkaIntegrationTest.java
-/Users/hendafarhani/Documents/microGo/driver-location-streamer/src/test/java/com/microgo/driver_location_streamer/integration/DriverLocationWebSocketContainerTest.java
-/Users/hendafarhani/Documents/microGo/driver-location-streamer/src/test/java/com/microgo/driver_location_streamer/kafka/DriverLocationStreamHandlerTest.java
-/Users/hendafarhani/Documents/microGo/driver-location-streamer/src/test/java/com/microgo/driver_location_streamer/kafka/RiderDataJsonDeserializerTest.java
-/Users/hendafarhani/Documents/microGo/driver-location-streamer/src/test/java/com/microgo/driver_location_streamer/service/serviceimpl/DriverLocationStreamingServiceImplTest.java
