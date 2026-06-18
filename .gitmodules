@@ -30,3 +30,7 @@
 	path = mysql-init
 	url = https://github.com/hendafarhani/mysql-init.git
 	branch = main
+[submodule "dashboard-service"]
+	path = dashboard-service
+	url = git@github.com:hendafarhani/dashboard-service.git
+	branch = main
