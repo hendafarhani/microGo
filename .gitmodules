@@ -34,3 +34,7 @@
 	path = dashboard-service
 	url = git@github.com:hendafarhani/dashboard-service.git
 	branch = main
+[submodule "driver-location-generator"]
+	path = driver-location-generator
+	url = https://github.com/hendafarhani/driver-location-generator.git
+	branch = main
