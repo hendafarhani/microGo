@@ -1,0 +1,47 @@
+fullnameOverride: dashboard-service
+
+namespace:
+  name: microgo-dev
+
+global:
+  imagePullPolicy: IfNotPresent
+  imagePullSecrets: []
+
+component:
+  name: dashboard-service
+  fullnameOverride: dashboard-service
+  replicaCount: 1
+  containerPort: 8087
+  image:
+    repository: registry.digitalocean.com/hendafarhani-microgo-registry/microgo-dashboard-service
+    tag: latest
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 8087
+    targetPort: 8087
+  configMap:
+    enabled: true
+    data:
+      SPRING_CLOUD_CONFIG_URI: http://centralized-config:8080
+      SPRING_CLOUD_CONFIG_NAME: dashboard-service
+      SPRING_CONFIG_IMPORT: optional:configserver:http://centralized-config:8080
+  secret:
+    enabled: false
+    stringData: {}
+  env:
+    - name: SERVER_PORT
+      value: "8087"
+    - name: PORT
+      value: "8087"
+  readinessProbe:
+    tcpSocket:
+      port: 8087
+    initialDelaySeconds: 20
+    periodSeconds: 10
+  livenessProbe:
+    tcpSocket:
+      port: 8087
+    initialDelaySeconds: 40
+    periodSeconds: 15
+  resources: {}

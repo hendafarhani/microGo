@@ -69,7 +69,8 @@ The ride request flow is message-driven. The local test sends a Kafka `ride.requ
 1. `ride-request` consumes the request.
 2. MySQL contains the persisted ride request and `EVENT_OUTBOX` rows.
 3. `outbox-publisher-service` publishes pending outbox rows to Kafka topic `ride.request.events`.
-4. A simulated dashboard acknowledgement on `ride.request.events.acks` marks an outbox row `PROCESSED`.
+4. `dashboard-service` validates the outbox row, reads the matching ride table, and pushes a WebSocket update.
+5. `dashboard-service` publishes an acknowledgement on `ride.request.events.acks`, which marks the outbox row `PROCESSED`.
 
 ### Seed Requester And Riders
 
@@ -122,38 +123,42 @@ docker compose exec -T mysql mysql -umicrogo_user -ppassword ride_requests_db \
   -e "SELECT id, event_type, status, ride_request_identifier, retry_count, last_error FROM event_outbox ORDER BY id DESC LIMIT 10;"
 ```
 
-Expected statuses after Kafka publish are usually `PUBLISHED`, because `dashboard-service` is not part of this first modification.
+Expected statuses after Kafka publish are usually `PROCESSED` once `dashboard-service` is running and consuming events.
 
-### Simulate Dashboard Ack
+### Verify Dashboard WebSocket And Ack
 
-Pick a `PUBLISHED` `event_outbox.id` and publish an acknowledgement:
+Subscribe a client to the dashboard WebSocket endpoint and the ride-specific destination:
 
 ```bash
-EVENT_ID=1
-printf '%s\n' "${EVENT_ID}:{\"eventId\":${EVENT_ID},\"status\":\"WEBSOCKET_PUBLISHED\",\"processedAt\":\"2026-06-13T10:00:03Z\",\"service\":\"dashboard-service\"}" | \
-docker compose exec -T kafka kafka-console-producer \
-  --bootstrap-server kafka:9092 \
-  --topic ride.request.events.acks \
-  --property parse.key=true \
-  --property key.separator=:
+npx wscat --connect http://localhost:8087/ws/websocket
 ```
 
-Then verify:
+Then subscribe with STOMP to `/topic/ride-requests/<ride_request_identifier>` and confirm the JSON payload contains:
+
+- `eventId`
+- `eventType`
+- `sourceTable`
+- `payload`
+- `data`
+
+If you need to confirm the acknowledgement path directly, inspect the most recent processed outbox row:
 
 ```bash
 docker compose exec -T mysql mysql -umicrogo_user -ppassword ride_requests_db \
-  -e "SELECT id, event_type, status, processed_at FROM event_outbox WHERE id=${EVENT_ID};"
+  -e "SELECT id, event_type, status, processed_at FROM event_outbox ORDER BY id DESC LIMIT 10;"
 ```
 
-The acknowledged row should be `PROCESSED`.
+Rows streamed by `dashboard-service` should move to `PROCESSED`.
 
 ## Useful Diagnostics
 
 ```bash
 docker compose logs --tail=200 ride-request
 docker compose logs --tail=200 outbox-publisher-service
+docker compose logs --tail=200 dashboard-service
 docker compose exec -T kafka kafka-topics --bootstrap-server kafka:9092 --describe --topic ride.request.events
 docker compose exec -T kafka kafka-consumer-groups --bootstrap-server kafka:9092 --describe --group driver.matching.group
+docker compose exec -T kafka kafka-consumer-groups --bootstrap-server kafka:9092 --describe --group dashboard-service.group
 ```
 
 Expected local topic shape for `ride.request.events` is `3` partitions and replication factor `1`.
