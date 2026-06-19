@@ -7,7 +7,6 @@
 ## Main Services
 
 - `ride-request`: ride lifecycle, matching, outbox creation, rider offer flow, RabbitMQ response handling
-- `location-rider`: publishes rider location data
 - `location-saver`: consumes and stores location data, including Redis-backed lookup support
 - `driver-location-streamer`: streams driver or rider location updates over Kafka and WebSocket-related paths
 - `dashboard-service`: streams ride request dashboard updates from Kafka-backed outbox events to WebSocket clients

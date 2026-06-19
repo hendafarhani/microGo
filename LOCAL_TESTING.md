@@ -90,11 +90,11 @@ docker compose exec -T mysql mysql -umicrogo_user -ppassword ride_requests_db \
       ('rider-london-10','Leo Ward','LON-RR-1010','1987-10-12');"
 ```
 
-The rider identifiers match the default London riders seeded by `location-rider`, so `ride-request` can match Redis geo entries to rider records.
+The rider identifiers match the default London rider records used by `ride-request`.
 
 ### Publish Driver Locations
 
-`location-rider` periodically publishes rider locations, and `location-saver` stores them in Redis. Wait until Redis has rider geo data:
+Publish rider locations through the configured Kafka location topic, then wait until `location-saver` has stored geo data in Redis:
 
 ```bash
 docker compose exec -T redis redis-cli ZCARD vehicle_location

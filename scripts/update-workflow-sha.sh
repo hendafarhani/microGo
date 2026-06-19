@@ -9,7 +9,6 @@ SERVICE_REPOS=(
   "discovery"
   "driver-location-streamer"
   "gateway"
-  "location-rider"
   "location-saver"
   "outbox-publisher-service"
   "ride-request"

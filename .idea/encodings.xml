@@ -5,7 +5,6 @@
     <file url="file://$PROJECT_DIR$/discovery/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/driver-location-streamer/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/gateway/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/location-rider/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/location-saver/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/outbox-publisher-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/ride-request/src/main/java" charset="UTF-8" />

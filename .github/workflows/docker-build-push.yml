@@ -22,7 +22,6 @@ jobs:
           - gateway
           - ride-request
           - outbox-publisher-service
-          - location-rider
           - location-saver
 
     steps:

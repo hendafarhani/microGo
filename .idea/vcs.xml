@@ -5,7 +5,6 @@
     <mapping directory="$PROJECT_DIR$/centralized-config" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/discovery" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/gateway" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/location-rider" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/location-saver" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/mysql-init" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/outbox-publisher-service" vcs="Git" />

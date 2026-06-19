@@ -11,7 +11,6 @@ Each component is a microservice maintained in its own Git repository, but broug
 | Service Name         | Description                                                         |
 |----------------------|---------------------------------------------------------------------|
 | `ride-request`       | Handles ride creation, fare calculation, and matching               |
-| `location-rider`     | Tracks and updates rider locations in real-time                     |
 | `location-saver`     | Persists GPS and location data using Redis/MySQL                    |
 | `dashboard-service`  | Streams ride request events to WebSocket clients and sends acks     |
 | `gateway`            | API Gateway using Spring Cloud Gateway                              |
