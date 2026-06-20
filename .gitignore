@@ -1,6 +1,11 @@
 .DS_Store
 **/.DS_Store
 
+# Local JetBrains project files
+.idea/compiler.xml
+.idea/encodings.xml
+.idea/vcs.xml
+
 terraform/**/tfplan
 
 helm/**/charts/*.tgz
