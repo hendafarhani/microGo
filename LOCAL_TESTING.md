@@ -58,21 +58,19 @@ docker compose logs --tail=100 simulation-service optimization-service
 docker compose exec -T postgres psql -U microgo_user -d postgres -c '\l'
 ```
 
-If you are reusing an older local MySQL volume, make sure the outbox payload column is large enough for the event envelope payload:
+The MySQL container initializes the shared `ride_requests_db` schema from
+`mysql-init/02_schema.sql`.
+
+MySQL only runs `/docker-entrypoint-initdb.d` scripts when its data directory is first
+created. If the container was initialized before schema changes were added, rerun the
+schema scripts manually without deleting existing data:
 
 ```bash
-docker compose exec -T mysql mysql -umicrogo_user -ppassword ride_requests_db \
-  -e "ALTER TABLE event_outbox MODIFY payload LONGTEXT NOT NULL;"
+docker compose exec -T mysql mysql -uroot -ppassword \
+  < mysql-init/02_schema.sql
+docker compose restart ride-request outbox-publisher-service dashboard-service
 ```
 
-Older case-sensitive MySQL volumes may contain both `DRIVER` and `driver`. Merge the
-legacy uppercase table into the canonical lowercase table without deleting driver
-records:
-
-```bash
-docker compose exec -T mysql mysql -umicrogo_user -ppassword ride_requests_db \
-  < mysql-init/03_migrate_driver_table_case.sql
-```
 
 If the same volume was created before `ride_request.status` used string enum values, repair the status column before testing timeout flows. This preserves existing status values and removes the old ordinal check constraint that rejects `TIMED_OUT`:
 

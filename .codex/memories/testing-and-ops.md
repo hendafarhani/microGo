@@ -7,7 +7,8 @@ Use `LOCAL_TESTING.md` as the main runbook for local end-to-end validation.
 ## Known Local Stack Shape
 
 - Docker Compose orchestrates the local environment.
-- PostgreSQL initialization reads the `POSTGRES_DATABASES` Docker Compose value and creates dedicated `driver_location`, `simulation_service`, and `optimization_service` databases for the three PostgreSQL-backed services. Existing PostgreSQL data directories require the initializer to be run manually when a database is added.
+- PostgreSQL initialization reads the `POSTGRES_DATABASES` Docker Compose value, creates dedicated `driver_location`, `simulation_service`, and `optimization_service` databases, and now provisions each service table set from `postgres-init/01_create_service_databases.sh`; Hibernate DDL auto-creation is disabled for those services. Existing PostgreSQL data directories require the initializer to be run manually when a database or table set is added.
+- MySQL initialization provisions the shared `ride_requests_db` schema from `mysql-init/02_schema.sql`; if an existing volume predates schema changes, rerun that script manually before restarting `ride-request`, `outbox-publisher-service`, and `dashboard-service`.
 - `simulation-service` and `optimization-service` are built and started by the root Docker Compose stack with Config Server, Eureka, Kafka, Redis, and PostgreSQL dependencies.
 - Core checks include gateway reachability, config endpoint reachability, Kafka topic behavior, Redis data presence, and MySQL persistence.
 - The outbox flow is important enough to verify explicitly, including dashboard WebSocket delivery and acknowledgement handling.
@@ -26,7 +27,7 @@ Use `LOCAL_TESTING.md` as the main runbook for local end-to-end validation.
 ## Operational Heuristics
 
 - If a change alters startup config, inspect Spring properties, centralized config, and deployment values together.
-- MySQL table names are canonicalized to lowercase. The driver dispatch projection is `driver`; use `mysql-init/03_migrate_driver_table_case.sql` to merge and remove a legacy uppercase `DRIVER` table on existing volumes.
+- MySQL table names are canonicalized to lowercase. The driver dispatch projection is `driver`.
 - `simulation-service` now follows the repo's `service` plus `serviceimpl` split and reads runtime properties from `centralized-config/centralized-configuration/simulation-service.properties`; when debugging bean wiring or missing config, check the interface injection point and that config file together.
 - In `simulation-service`, entity state transitions such as run completion and metrics status updates should be routed through mapper helpers rather than applied inline in services; check `mapper/` first when a status mutation looks wrong.
 - If a change alters networking or routing, inspect gateway, discovery, Helm, and Terraform impact together.
