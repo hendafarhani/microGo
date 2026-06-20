@@ -1,8 +1,7 @@
 package com.microgo.driver_location_streamer.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.microgo.driver_location_streamer.model.Location;
-import com.microgo.driver_location_streamer.model.RiderData;
+import com.microgo.driver_location_streamer.model.DriverLocationUpdatedEvent;
 import com.microgo.driver_location_streamer.service.DriverLocationStreamingService;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
@@ -75,7 +74,7 @@ class DriverLocationWebSocketContainerTest {
 
     @Test
     void streamsKafkaLocationEventToSubscribedWebSocketClient() throws Exception {
-        BlockingQueue<RiderData> receivedMessages = new LinkedBlockingQueue<>();
+        BlockingQueue<DriverLocationUpdatedEvent> receivedMessages = new LinkedBlockingQueue<>();
         WebSocketStompClient stompClient = new WebSocketStompClient(new SockJsClient(List.of(
                 new WebSocketTransport(new StandardWebSocketClient())
         )));
@@ -89,28 +88,30 @@ class DriverLocationWebSocketContainerTest {
         session.subscribe(DriverLocationStreamingService.DRIVER_LOCATIONS_DESTINATION, new StompFrameHandler() {
             @Override
             public Type getPayloadType(StompHeaders headers) {
-                return RiderData.class;
+                return DriverLocationUpdatedEvent.class;
             }
 
             @Override
             public void handleFrame(StompHeaders headers, Object payload) {
-                receivedMessages.add((RiderData) payload);
+                receivedMessages.add((DriverLocationUpdatedEvent) payload);
             }
         });
 
-        RiderData payload = RiderData.builder()
-                .identifier("rider-ws-1")
-                .userName("Socket Rider")
-                .location(Location.builder().latitude(40.7128).longitude(-74.0060).radius(15).build())
+        DriverLocationUpdatedEvent payload = DriverLocationUpdatedEvent.builder()
+                .driverId("driver-ws-1")
+                .providerIdentifier("driver-ws-1")
+                .status("CRUISING")
+                .latitude(51.5090)
+                .longitude(-0.1180)
                 .build();
 
         kafkaTemplate.send(
                         riderLocationTopic,
-                        payload.getIdentifier(),
+                        payload.getDriverId(),
                         objectMapper.writeValueAsBytes(payload))
                 .get(10, TimeUnit.SECONDS);
 
-        RiderData received = receivedMessages.poll(10, TimeUnit.SECONDS);
+        DriverLocationUpdatedEvent received = receivedMessages.poll(10, TimeUnit.SECONDS);
 
         assertThat(received).isEqualTo(payload);
         session.disconnect();

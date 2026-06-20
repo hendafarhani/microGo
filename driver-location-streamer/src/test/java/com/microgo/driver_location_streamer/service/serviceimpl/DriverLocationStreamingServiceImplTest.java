@@ -1,39 +1,53 @@
 package com.microgo.driver_location_streamer.service.serviceimpl;
 
-import com.microgo.driver_location_streamer.model.Location;
-import com.microgo.driver_location_streamer.model.RiderData;
+import com.microgo.driver_location_streamer.model.DriverLocationUpdatedEvent;
 import com.microgo.driver_location_streamer.service.DriverLocationStreamingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.support.ExecutorSubscribableChannel;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class DriverLocationStreamingServiceImplTest {
 
-    private SimpMessagingTemplate messagingTemplate;
+    private RecordingSimpMessagingTemplate messagingTemplate;
     private DriverLocationStreamingServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        messagingTemplate = mock(SimpMessagingTemplate.class);
+        messagingTemplate = new RecordingSimpMessagingTemplate();
         service = new DriverLocationStreamingServiceImpl(messagingTemplate);
     }
 
     @Test
-    void streamDriverLocationBroadcastsFullRiderDataPayload() {
-        RiderData riderData = RiderData.builder()
-                .identifier("rider-1")
-                .userName("Ada")
-                .location(Location.builder().latitude(48.8584).longitude(2.2945).radius(12).build())
+    void streamDriverLocationBroadcastsFullEventPayload() {
+        DriverLocationUpdatedEvent event = DriverLocationUpdatedEvent.builder()
+                .driverId("driver-1")
+                .providerIdentifier("driver-1")
+                .status("CRUISING")
+                .latitude(51.5074)
+                .longitude(-0.1278)
                 .build();
 
-        service.streamDriverLocation(riderData);
+        service.streamDriverLocation(event);
 
-        verify(messagingTemplate).convertAndSend(
-                DriverLocationStreamingService.DRIVER_LOCATIONS_DESTINATION,
-                riderData
-        );
+        assertThat(messagingTemplate.destination).isEqualTo(DriverLocationStreamingService.DRIVER_LOCATIONS_DESTINATION);
+        assertThat(messagingTemplate.payload).isEqualTo(event);
+    }
+
+    private static class RecordingSimpMessagingTemplate extends SimpMessagingTemplate {
+        private String destination;
+        private Object payload;
+
+        private RecordingSimpMessagingTemplate() {
+            super(new ExecutorSubscribableChannel());
+        }
+
+        @Override
+        public void convertAndSend(String destination, Object payload) {
+            this.destination = destination;
+            this.payload = payload;
+        }
     }
 }

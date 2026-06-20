@@ -31,6 +31,25 @@ services:
     ports:
       - "6379:6379"
 
+  postgres:
+    image: postgres:16
+    networks:
+      - app-network
+    environment:
+      POSTGRES_DB: driver_location
+      POSTGRES_DATABASES: driver_location,simulation_service,optimization_service
+      POSTGRES_USER: microgo_user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U microgo_user -d driver_location"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - ./postgres-init:/docker-entrypoint-initdb.d
+
   rabbitmq:
     image: rabbitmq:3-management
     networks:
@@ -40,7 +59,7 @@ services:
       - "15672:15672"
 
   mysql:
-    image: mysql:8
+    image: mysql:8.4
     networks:
       - app-network
     environment:
@@ -119,6 +138,8 @@ services:
         condition: service_started
       mysql:
         condition: service_healthy
+      driver-location-generator:
+        condition: service_started
     networks:
       - app-network
     environment:
@@ -181,6 +202,66 @@ services:
       SPRING_CONFIG_IMPORT: optional:configserver:http://centralized-config:8080
       PORT: 8085
       SERVER_PORT: 8085
+    restart:
+      always
+
+  driver-location-generator:
+    build: ./driver-location-generator
+    networks:
+      - app-network
+    depends_on:
+      discovery:
+        condition: service_healthy
+      centralized-config:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://centralized-config:8080
+    restart:
+      always
+
+  simulation-service:
+    build: ./simulation-service
+    networks:
+      - app-network
+    depends_on:
+      discovery:
+        condition: service_healthy
+      centralized-config:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://centralized-config:8080
+    restart:
+      always
+
+  optimization-service:
+    build: ./optimization-service
+    networks:
+      - app-network
+    depends_on:
+      discovery:
+        condition: service_healthy
+      centralized-config:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://centralized-config:8080
     restart:
       always
 

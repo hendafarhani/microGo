@@ -36,11 +36,42 @@ curl -fsS http://localhost:8082
 curl -fsS http://localhost:8080/ride-request/default
 ```
 
+The PostgreSQL container initializes separate `driver_location`, `simulation_service`,
+and `optimization_service` databases from the `POSTGRES_DATABASES` value in
+`docker-compose.yml`.
+
+PostgreSQL only runs `/docker-entrypoint-initdb.d` scripts when its data directory is
+first created. If the container was initialized before a database was added, run the
+initializer manually without deleting existing data:
+
+```bash
+docker compose exec postgres \
+  bash /docker-entrypoint-initdb.d/01_create_service_databases.sh
+docker compose restart driver-location-generator simulation-service optimization-service
+```
+
+Confirm the PostgreSQL-backed services started successfully:
+
+```bash
+docker compose ps simulation-service optimization-service
+docker compose logs --tail=100 simulation-service optimization-service
+docker compose exec -T postgres psql -U microgo_user -d postgres -c '\l'
+```
+
 If you are reusing an older local MySQL volume, make sure the outbox payload column is large enough for the event envelope payload:
 
 ```bash
 docker compose exec -T mysql mysql -umicrogo_user -ppassword ride_requests_db \
   -e "ALTER TABLE event_outbox MODIFY payload LONGTEXT NOT NULL;"
+```
+
+Older case-sensitive MySQL volumes may contain both `DRIVER` and `driver`. Merge the
+legacy uppercase table into the canonical lowercase table without deleting driver
+records:
+
+```bash
+docker compose exec -T mysql mysql -umicrogo_user -ppassword ride_requests_db \
+  < mysql-init/03_migrate_driver_table_case.sql
 ```
 
 If the same volume was created before `ride_request.status` used string enum values, repair the status column before testing timeout flows. This preserves existing status values and removes the old ordinal check constraint that rejects `TIMED_OUT`:
@@ -77,7 +108,7 @@ The ride request flow is message-driven. The local test sends a Kafka `ride.requ
 ```bash
 docker compose exec -T mysql mysql -umicrogo_user -ppassword ride_requests_db \
   -e "INSERT IGNORE INTO users (identifier, name) VALUES ('user-local-happy', 'Local Happy User'); \
-      INSERT IGNORE INTO riders (identifier, name, license_number, date_of_birth) VALUES \
+      INSERT IGNORE INTO driver (identifier, name, license_number, date_of_birth) VALUES \
       ('rider-london-1','Olivia Parker','LON-RR-1001','1990-03-14'), \
       ('rider-london-2','Mason Reed','LON-RR-1002','1988-07-02'), \
       ('rider-london-3','Sophia Turner','LON-RR-1003','1994-01-21'), \
@@ -91,6 +122,24 @@ docker compose exec -T mysql mysql -umicrogo_user -ppassword ride_requests_db \
 ```
 
 The rider identifiers match the default London rider records used by `ride-request`.
+
+Drivers produced by `simulation-service` no longer require manual insertion into `driver`.
+`ride-request` consumes `DriverGeneratedEvent` from `driver.generated` and idempotently
+creates or updates its local MySQL dispatch projection using `driverId`.
+
+For an existing local MySQL volume created with the former `RIDERS` table, apply the
+data-preserving rename once before restarting `ride-request` and `dashboard-service`:
+
+```bash
+docker compose exec -T mysql mysql -uroot -ppassword ride_requests_db \
+
+
+To verify the projection:
+
+```bash
+docker compose exec -T mysql mysql -umicrogo_user -ppassword ride_requests_db \
+  -e "SELECT identifier, driver_identifier, driver_display_id FROM driver ORDER BY id DESC LIMIT 10;"
+```
 
 ### Publish Driver Locations
 
@@ -156,6 +205,8 @@ Rows streamed by `dashboard-service` should move to `PROCESSED`.
 docker compose logs --tail=200 ride-request
 docker compose logs --tail=200 outbox-publisher-service
 docker compose logs --tail=200 dashboard-service
+docker compose logs --tail=200 simulation-service
+docker compose logs --tail=200 optimization-service
 docker compose exec -T kafka kafka-topics --bootstrap-server kafka:9092 --describe --topic ride.request.events
 docker compose exec -T kafka kafka-consumer-groups --bootstrap-server kafka:9092 --describe --group driver.matching.group
 docker compose exec -T kafka kafka-consumer-groups --bootstrap-server kafka:9092 --describe --group dashboard-service.group

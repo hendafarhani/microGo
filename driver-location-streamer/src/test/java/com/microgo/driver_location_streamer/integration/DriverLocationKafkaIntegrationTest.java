@@ -1,8 +1,7 @@
 package com.microgo.driver_location_streamer.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.microgo.driver_location_streamer.model.Location;
-import com.microgo.driver_location_streamer.model.RiderData;
+import com.microgo.driver_location_streamer.model.DriverLocationUpdatedEvent;
 import com.microgo.driver_location_streamer.service.DriverLocationStreamingService;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
@@ -62,16 +61,18 @@ class DriverLocationKafkaIntegrationTest {
     }
 
     @Test
-    void consumesRiderLocationFromKafkaAndBroadcastsIt() throws Exception {
-        RiderData payload = RiderData.builder()
-                .identifier("rider-kafka-1")
-                .userName("Kafka Rider")
-                .location(Location.builder().latitude(48.8584).longitude(2.2945).radius(10).build())
+    void consumesDriverLocationFromKafkaAndBroadcastsIt() throws Exception {
+        DriverLocationUpdatedEvent payload = DriverLocationUpdatedEvent.builder()
+                .driverId("driver-kafka-1")
+                .providerIdentifier("driver-kafka-1")
+                .status("CRUISING")
+                .latitude(51.5074)
+                .longitude(-0.1278)
                 .build();
 
         kafkaTemplate.send(
                         riderLocationTopic,
-                        payload.getIdentifier(),
+                        payload.getDriverId(),
                         objectMapper.writeValueAsBytes(payload))
                 .get(10, TimeUnit.SECONDS);
 

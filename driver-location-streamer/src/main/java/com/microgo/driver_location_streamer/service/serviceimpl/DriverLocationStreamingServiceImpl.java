@@ -1,6 +1,6 @@
 package com.microgo.driver_location_streamer.service.serviceimpl;
 
-import com.microgo.driver_location_streamer.model.RiderData;
+import com.microgo.driver_location_streamer.model.DriverLocationUpdatedEvent;
 import com.microgo.driver_location_streamer.service.DriverLocationStreamingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -13,7 +13,7 @@ public class DriverLocationStreamingServiceImpl implements DriverLocationStreami
     private final SimpMessagingTemplate messagingTemplate;
 
     @Override
-    public void streamDriverLocation(RiderData riderData) {
-        messagingTemplate.convertAndSend(DRIVER_LOCATIONS_DESTINATION, riderData);
+    public void streamDriverLocation(DriverLocationUpdatedEvent event) {
+        messagingTemplate.convertAndSend(DRIVER_LOCATIONS_DESTINATION, event);
     }
 }
