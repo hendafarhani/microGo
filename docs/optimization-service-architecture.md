@@ -71,6 +71,7 @@
 
 ```text
 optimization-service
+├── businessrule
 ├── config
 ├── controller
 ├── domain
@@ -131,6 +132,11 @@ Service implementations orchestrate state, calculations, persistence, and public
 
 ### Mapping And Comparison
 
+- `DriverRepositioningBusinessRules`
+- `OptimizationMetricsBusinessRules`
+- `RideDispatchConstraintBusinessRules`
+- `SimulationDemandBusinessRules`
+- `ZoneDemandBusinessRules`
 - `OptimizationResultMapper`
 - `BaselineVsOptimizedComparator`
 
