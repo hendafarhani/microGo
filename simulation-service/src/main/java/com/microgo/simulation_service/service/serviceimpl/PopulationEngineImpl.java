@@ -8,6 +8,7 @@ import com.microgo.simulation_service.kafka.publisher.impl.RideRequestPublisherI
 import com.microgo.simulation_service.mapper.PopulationEngineMapper;
 import com.microgo.simulation_service.repository.DriverProfileRepository;
 import com.microgo.simulation_service.repository.PassengerProfileRepository;
+import com.microgo.simulation_service.service.DriverAvailabilityRegistry;
 import com.microgo.simulation_service.service.DriverPopulationGenerator;
 import com.microgo.simulation_service.service.PassengerPopulationGenerator;
 import com.microgo.simulation_service.service.PopulationEngine;
@@ -27,6 +28,7 @@ public class PopulationEngineImpl implements PopulationEngine {
     private final PassengerProfileRepository passengerProfileRepository;
     private final DriverProfileRepository driverProfileRepository;
     private final RideRequestPublisherImpl rideRequestPublisherImpl;
+    private final DriverAvailabilityRegistry driverAvailabilityRegistry;
 
     @Override
     @Transactional
@@ -57,6 +59,8 @@ public class PopulationEngineImpl implements PopulationEngine {
             driverProfileRepository.save(PopulationEngineMapper.toDriverProfileEntity(driver, runEntity));
             // Driver movement is owned elsewhere, so this publication acts as a handoff after profile creation.
             rideRequestPublisherImpl.publishDriverGenerated(PopulationEngineMapper.toDriverGeneratedEvent(driver, context));
+            // A freshly generated driver is available for dispatch until it accepts a ride.
+            driverAvailabilityRegistry.markAvailable(driver.getDriverId());
         }
     }
 }

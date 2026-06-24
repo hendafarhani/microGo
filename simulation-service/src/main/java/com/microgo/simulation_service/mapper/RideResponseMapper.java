@@ -63,6 +63,9 @@ public final class RideResponseMapper {
                 .rideId(event.getRideId())
                 .driverId(event.getDriverId())
                 .passengerId(event.getPassengerId())
+                .pickupLatitude(event.getPickupLatitude())
+                .pickupLongitude(event.getPickupLongitude())
+                .expectedFare(event.getExpectedFare())
                 .acceptanceProbability(decision.getAcceptanceProbability())
                 .decidedAt(decidedAt)
                 .build();

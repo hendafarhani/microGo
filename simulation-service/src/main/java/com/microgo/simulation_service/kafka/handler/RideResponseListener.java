@@ -13,6 +13,7 @@ import com.microgo.simulation_service.kafka.model.RideCancelledEvent;
 import com.microgo.simulation_service.kafka.publisher.impl.RideRequestPublisherImpl;
 import com.microgo.simulation_service.mapper.RideResponseMapper;
 import com.microgo.simulation_service.repository.DriverProfileRepository;
+import com.microgo.simulation_service.service.DriverAvailabilityRegistry;
 import com.microgo.simulation_service.service.DriverDecisionEngine;
 import com.microgo.simulation_service.service.ScenarioEngine;
 import com.microgo.simulation_service.service.SimulationMetricsCollector;
@@ -36,6 +37,7 @@ public class RideResponseListener {
     private final SimulationMetricsCollector simulationMetricsCollector;
     private final RideRequestPublisherImpl rideRequestPublisherImpl;
     private final ScenarioEngine scenarioEngine;
+    private final DriverAvailabilityRegistry driverAvailabilityRegistry;
 
     @KafkaListener(
             id = "${simulation-service.listeners.driver-notified.id}",
@@ -77,6 +79,8 @@ public class RideResponseListener {
             containerFactory = "rideCancelledEventListenerFactory"
     )
     public void onRideCancelled(RideCancelledEvent event) {
+        // A cancelled ride frees the driver back into the dispatch availability pool.
+        driverAvailabilityRegistry.markAvailable(event.getDriverId());
         driverProfileRepository.findByExternalDriverId(event.getDriverId())
                 .ifPresent(profile -> updateMetricsForCancelledRide(profile.getSimulationRun().getId()));
     }
@@ -98,6 +102,8 @@ public class RideResponseListener {
             containerFactory = "driverReachedDestinationEventListenerFactory"
     )
     public void onDriverReachedDestination(DriverReachedDestinationEvent event) {
+        // Trip complete: the driver is available for dispatch again.
+        driverAvailabilityRegistry.markAvailable(event.getDriverId());
         log.debug("Driver {} reached destination for ride {}", event.getDriverId(), event.getRideId());
     }
 
@@ -147,6 +153,8 @@ public class RideResponseListener {
     }
 
     private void publishDriverAcceptedEvent(DriverNotifiedEvent event, UUID simulationRunId, DriverDecision decision) {
+        // The driver committed to this ride, so it leaves the dispatch availability pool.
+        driverAvailabilityRegistry.markBusy(event.getDriverId());
         rideRequestPublisherImpl.publishDriverAccepted(
                 RideResponseMapper.toDriverAcceptedEvent(event, simulationRunId, decision, Instant.now()));
     }

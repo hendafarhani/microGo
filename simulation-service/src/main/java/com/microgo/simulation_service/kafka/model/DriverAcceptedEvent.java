@@ -17,6 +17,9 @@ public class DriverAcceptedEvent {
     private String rideId;
     private String driverId;
     private String passengerId;
+    private double pickupLatitude;
+    private double pickupLongitude;
+    private double expectedFare;
     private double acceptanceProbability;
     private Instant decidedAt;
 }
