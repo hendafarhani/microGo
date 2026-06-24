@@ -2,7 +2,10 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/driver-location-streamer/driver-location-streamer.iml" filepath="$PROJECT_DIR$/driver-location-streamer/driver-location-streamer.iml" />
+      <module fileurl="file://$PROJECT_DIR$/optimization-service/optimization-service.iml" filepath="$PROJECT_DIR$/optimization-service/optimization-service.iml" />
       <module fileurl="file://$PROJECT_DIR$/ride-request/ride-request.iml" filepath="$PROJECT_DIR$/ride-request/ride-request.iml" />
+      <module fileurl="file://$PROJECT_DIR$/simulation-service/simulation-service.iml" filepath="$PROJECT_DIR$/simulation-service/simulation-service.iml" />
     </modules>
   </component>
 </project>

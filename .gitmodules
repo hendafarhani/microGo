@@ -34,3 +34,19 @@
 	path = driver-location-generator
 	url = https://github.com/hendafarhani/driver-location-generator.git
 	branch = main
+[submodule "driver-location-streamer"]
+	path = driver-location-streamer
+	url = git@github.com:hendafarhani/driver-location-streamer.git
+	branch = main
+[submodule "optimization-service"]
+	path = optimization-service
+	url = git@github.com:hendafarhani/optimization-service.git
+	branch = main
+[submodule "simulation-service"]
+	path = simulation-service
+	url = git@github.com:hendafarhani/simulation-service.git
+	branch = main
+[submodule "postgres-init"]
+	path = postgres-init
+	url = git@github.com:hendafarhani/postgres-init.git
+	branch = main
