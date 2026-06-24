@@ -42,7 +42,8 @@ public class OptimizationSnapshotBuilderImpl implements OptimizationSnapshotBuil
 
     private SimulationOutputReader.SimulationState findRequiredSimulationState(UUID simulationRunId) {
         return simulationOutputReader.findSimulationState(simulationRunId)
-                .orElseThrow(() -> new IllegalStateException("No simulation state available for optimization"));
+                .orElseThrow(() -> new IllegalStateException(
+                        "No simulation state is available yet; wait for scenario.started or simulation metrics events"));
     }
 
     private ScenarioType resolveActiveScenario(

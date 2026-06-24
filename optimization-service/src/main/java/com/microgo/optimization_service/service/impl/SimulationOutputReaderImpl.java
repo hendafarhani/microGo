@@ -1,5 +1,6 @@
 package com.microgo.optimization_service.service.impl;
 
+import com.microgo.optimization_service.businessrule.SimulationDemandBusinessRules;
 import com.microgo.optimization_service.config.OptimizationServiceProperties;
 import com.microgo.optimization_service.enums.ScenarioType;
 import com.microgo.optimization_service.enums.ZoneId;
@@ -38,7 +39,7 @@ public class SimulationOutputReaderImpl implements SimulationOutputReader {
                 event.getSimulationRunId(),
                 simulationStateMapper.fromScenarioStarted(
                         event,
-                        inferDemandByScenario(event.getScenario(), 0)));
+                        SimulationDemandBusinessRules.inferDemandByScenario(event.getScenario(), 0)));
     }
 
     @Override
@@ -70,10 +71,10 @@ public class SimulationOutputReaderImpl implements SimulationOutputReader {
 
     @Override
     public double resolveTrafficMultiplier(ScenarioType scenarioType) {
-        return switch (scenarioType) {
-            case CONCERT_RAIN -> properties.getConcertRainTrafficMultiplier();
-            case AIRPORT_RUSH -> properties.getAirportRushTrafficMultiplier();
-        };
+        return SimulationDemandBusinessRules.resolveTrafficMultiplier(
+                scenarioType,
+                properties.getConcertRainTrafficMultiplier(),
+                properties.getAirportRushTrafficMultiplier());
     }
 
     private void storeAsActive(UUID simulationRunId, SimulationState simulationState) {
@@ -93,23 +94,7 @@ public class SimulationOutputReaderImpl implements SimulationOutputReader {
                 && !currentState.getPredictedDemandByZone().isEmpty()) {
             return currentState.getPredictedDemandByZone();
         }
-        return inferDemandByScenario(event.getScenario(), event.getPendingRideRequests());
-    }
-
-    private Map<ZoneId, Integer> inferDemandByScenario(ScenarioType scenarioType, int pendingRideRequests) {
-        Map<ZoneId, Integer> demandByZone = new EnumMap<>(ZoneId.class);
-        if (scenarioType == ScenarioType.AIRPORT_RUSH) {
-            demandByZone.put(ZoneId.HEATHROW_CORRIDOR, Math.max(1, pendingRideRequests));
-            demandByZone.put(ZoneId.CENTRAL_LONDON, Math.max(1, pendingRideRequests / 2));
-            demandByZone.put(ZoneId.GENERAL_LONDON, Math.max(1, pendingRideRequests / 4));
-            demandByZone.put(ZoneId.WEMBLEY_EVENT_ZONE, 0);
-        } else {
-            demandByZone.put(ZoneId.WEMBLEY_EVENT_ZONE, Math.max(1, pendingRideRequests));
-            demandByZone.put(ZoneId.CENTRAL_LONDON, Math.max(1, pendingRideRequests / 3));
-            demandByZone.put(ZoneId.GENERAL_LONDON, Math.max(1, pendingRideRequests / 4));
-            demandByZone.put(ZoneId.HEATHROW_CORRIDOR, 0);
-        }
-        return demandByZone;
+        return SimulationDemandBusinessRules.inferDemandByScenario(event.getScenario(), event.getPendingRideRequests());
     }
 
     private Map<ZoneId, Integer> normalizeDemandByZone(Map<String, Integer> rawDemand) {

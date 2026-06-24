@@ -15,6 +15,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -40,6 +42,7 @@ public class SimulationResultEntity {
     private ScenarioType activeScenario;
 
     @Column(name = "predicted_demand_by_zone", nullable = false, columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String predictedDemandByZone;
 
     @Column(name = "pending_ride_requests", nullable = false)
@@ -55,6 +58,7 @@ public class SimulationResultEntity {
     private double cancellationRisk;
 
     @Column(name = "metrics_snapshot", nullable = false, columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String metricsSnapshot;
 
     @Column(name = "completed_at", nullable = false)

@@ -1,5 +1,7 @@
 package com.microgo.optimization_service.service.impl;
 
+import com.microgo.optimization_service.businessrule.DriverRepositioningBusinessRules;
+import com.microgo.optimization_service.businessrule.ZoneDemandBusinessRules;
 import com.microgo.optimization_service.domain.DriverSnapshot;
 import com.microgo.optimization_service.domain.OptimizationComparison;
 import com.microgo.optimization_service.domain.OptimizationSnapshot;
@@ -36,7 +38,7 @@ public class TimefoldSolverServiceImpl implements TimefoldSolverService {
     @Override
     public RideAvailabilityOptimizationSolution solveSnapshot(OptimizationSnapshot snapshot) {
         Map<ZoneId, Integer> demandByZone = constraintProvider.demandByZone(snapshot);
-        Map<ZoneId, Integer> initialSupplyByZone = calculateCurrentSupplyByZone(snapshot);
+        Map<ZoneId, Integer> initialSupplyByZone = ZoneDemandBusinessRules.buildSupplyByZone(snapshot, Map.of());
         List<DriverRepositioningPlan> plans = createRepositioningPlans(
                 snapshot,
                 demandByZone,
@@ -54,14 +56,15 @@ public class TimefoldSolverServiceImpl implements TimefoldSolverService {
         return timefoldPlanningMapper.attachComparison(
                 provisionalSolution,
                 comparison,
-                calculateComparisonScore(comparison));
+                DriverRepositioningBusinessRules.calculateComparisonScore(comparison));
     }
 
     private List<DriverRepositioningPlan> createRepositioningPlans(
             OptimizationSnapshot snapshot,
             Map<ZoneId, Integer> demandByZone,
             Map<ZoneId, Integer> initialSupplyByZone) {
-        Map<ZoneId, Integer> mutableSupplyByZone = new EnumMap<>(initialSupplyByZone);
+        Map<ZoneId, Integer> mutableSupplyByZone = new EnumMap<>(ZoneId.class);
+        mutableSupplyByZone.putAll(initialSupplyByZone);
         List<DriverRepositioningPlan> plans = new ArrayList<>();
         for (DriverSnapshot driver : constraintProvider.eligibleDrivers(snapshot)) {
             createRepositioningPlan(driver, snapshot, demandByZone, mutableSupplyByZone)
@@ -91,14 +94,8 @@ public class TimefoldSolverServiceImpl implements TimefoldSolverService {
                         targetZone,
                         demandByZone,
                         snapshot.getDistanceMatrix()),
-                calculateExpectedWaitReductionSeconds(driver, targetZone, snapshot),
-                calculateExpectedCancellationReduction(snapshot)));
-    }
-
-    private int calculateComparisonScore(OptimizationComparison comparison) {
-        return (int) Math.round(
-                (comparison.getBaselineMetrics().getAverageWaitSeconds() - comparison.getOptimizedMetrics().getAverageWaitSeconds())
-                        + (comparison.getBaselineMetrics().getCancellationRisk() - comparison.getOptimizedMetrics().getCancellationRisk()) * 100.0);
+                DriverRepositioningBusinessRules.calculateExpectedWaitReductionSeconds(driver, targetZone, snapshot),
+                DriverRepositioningBusinessRules.calculateExpectedCancellationReduction(snapshot)));
     }
 
     private ZoneId findBestTargetZone(DriverSnapshot driverSnapshot,
@@ -118,12 +115,7 @@ public class TimefoldSolverServiceImpl implements TimefoldSolverService {
             if (shortage <= 0) {
                 continue;
             }
-            double score = calculateTargetZoneScore(
-                    driverSnapshot,
-                    zoneId,
-                    demandByZone,
-                    snapshot,
-                    shortage);
+            double score = calculateTargetZoneScore(driverSnapshot, zoneId, demandByZone, snapshot, shortage);
             if (score > bestScore) {
                 bestScore = score;
                 bestZone = zoneId;
@@ -145,12 +137,15 @@ public class TimefoldSolverServiceImpl implements TimefoldSolverService {
             Map<ZoneId, Integer> demandByZone,
             OptimizationSnapshot snapshot,
             int shortage) {
-        double score = constraintProvider.priorityScore(
+        double basePriorityScore = constraintProvider.priorityScore(
                 driver,
                 targetZone,
                 demandByZone,
-                snapshot.getDistanceMatrix()) + (shortage * 2.0);
-        return targetZone == driver.getCurrentZone() ? score - 2.0 : score;
+                snapshot.getDistanceMatrix());
+        return DriverRepositioningBusinessRules.calculateTargetZoneScore(
+                basePriorityScore,
+                shortage,
+                targetZone == driver.getCurrentZone());
     }
 
     private void moveSupply(
@@ -159,29 +154,5 @@ public class TimefoldSolverServiceImpl implements TimefoldSolverService {
             Map<ZoneId, Integer> supplyByZone) {
         supplyByZone.merge(currentZone, -1, Integer::sum);
         supplyByZone.merge(targetZone, 1, Integer::sum);
-    }
-
-    private int calculateExpectedWaitReductionSeconds(
-            DriverSnapshot driver,
-            ZoneId targetZone,
-            OptimizationSnapshot snapshot) {
-        return Math.max(
-                10,
-                snapshot.getDistanceMatrix().travelMinutes(driver.getCurrentZone(), targetZone) * 3);
-    }
-
-    private double calculateExpectedCancellationReduction(OptimizationSnapshot snapshot) {
-        return Math.min(0.25, snapshot.getCancellationRisk() * 0.2);
-    }
-
-    private Map<ZoneId, Integer> calculateCurrentSupplyByZone(OptimizationSnapshot snapshot) {
-        Map<ZoneId, Integer> supplyByZone = new EnumMap<>(ZoneId.class);
-        for (ZoneId zoneId : ZoneId.values()) {
-            supplyByZone.put(zoneId, 0);
-        }
-        snapshot.getDriverSnapshots().stream()
-                .filter(DriverSnapshot::isRepositionable)
-                .forEach(driver -> supplyByZone.merge(driver.getCurrentZone(), 1, Integer::sum));
-        return supplyByZone;
     }
 }

@@ -12,6 +12,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -39,12 +41,15 @@ public class OptimizationResultEntity {
     private int pendingRideCount;
 
     @Column(name = "demand_summary", nullable = false, columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String demandSummary;
 
     @Column(name = "baseline_metrics", nullable = false, columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String baselineMetrics;
 
     @Column(name = "optimized_metrics", nullable = false, columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String optimizedMetrics;
 
     @Column(name = "score_hard")

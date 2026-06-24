@@ -32,6 +32,7 @@ The service boundary is intentionally separate from `location-saver` and `driver
 
 ```text
 driver-location-generator
+├── businessrule
 ├── config
 ├── domain
 ├── kafka
@@ -45,12 +46,17 @@ driver-location-generator
 
 ## Core Classes And Interfaces
 
+- `DriverSeedBusinessRules`: deterministic scenario-centered driver seeding
 - `DriverGeoState`: source-of-truth live state for one driver
 - `DriverMovementEngine`: applies commands, advances ticks, persists state, publishes events
+- `LondonDistanceBusinessRules`: haversine distance and interpolation calculations
 - `DriverMovementScheduler`: periodic movement trigger
+- `LondonZoneBusinessRules`: Wembley, Heathrow, Central, and General London classification rules
 - `LondonZoneService`: maps coordinates to Wembley, Heathrow, Central, or General London zones
 - `LondonDistanceMatrix`: distance and movement interpolation helper
+- `LondonTrafficBusinessRules`: step-size and traffic-multiplier rules
 - `LondonTrafficModel`: converts scenario and zone pressure into step size multipliers
+- `MovementProgressBusinessRules`: arrival thresholds, target progress, idle drift, and scenario bias targets
 - `MovementStrategyResolver`: picks the active movement behavior from driver status
 - `IdleMovementStrategy`
 - `ScenarioMovementStrategy`

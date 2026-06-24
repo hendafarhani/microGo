@@ -1,6 +1,7 @@
 package com.microgo.optimization_service.kafka.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.microgo.optimization_service.kafka.model.DriverLocationUpdatedEvent;
 import com.microgo.optimization_service.kafka.model.RideAssignedEvent;
 import com.microgo.optimization_service.kafka.model.RideCancelledEvent;
@@ -15,6 +16,7 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
@@ -25,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
+@EnableKafka
 public class KafkaListenerConfiguration {
 
     @Bean
@@ -73,8 +76,14 @@ public class KafkaListenerConfiguration {
             String bootstrapServers,
             Class<T> valueType) {
         ConcurrentKafkaListenerContainerFactory<String, T> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory(bootstrapServers, valueType, new ObjectMapper()));
+        factory.setConsumerFactory(consumerFactory(bootstrapServers, valueType, eventObjectMapper()));
         return factory;
+    }
+
+    private ObjectMapper eventObjectMapper() {
+        return new ObjectMapper()
+                .findAndRegisterModules()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
     private <T> ConsumerFactory<String, T> consumerFactory(
