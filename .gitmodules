@@ -14,10 +14,6 @@
 	path = gateway
 	url = https://github.com/hendafarhani/gateway.git
 	branch = main
-[submodule "location-rider"]
-	path = location-rider
-	url = https://github.com/hendafarhani/location-rider.git
-	branch = main
 [submodule "location-saver"]
 	path = location-saver
 	url = https://github.com/hendafarhani/location-saver.git
@@ -33,4 +29,8 @@
 [submodule "dashboard-service"]
 	path = dashboard-service
 	url = git@github.com:hendafarhani/dashboard-service.git
+	branch = main
+[submodule "driver-location-generator"]
+	path = driver-location-generator
+	url = https://github.com/hendafarhani/driver-location-generator.git
 	branch = main

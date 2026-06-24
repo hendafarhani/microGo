@@ -6,13 +6,16 @@ MICROGO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORKFLOW_SHA="${1:-$(git -C "$MICROGO_ROOT" rev-parse HEAD)}"
 SERVICE_REPOS=(
   "centralized-config"
+  "dashboard-service"
   "discovery"
+  "driver-location-generator"
   "driver-location-streamer"
   "gateway"
-  "location-rider"
   "location-saver"
+  "optimization-service"
   "outbox-publisher-service"
   "ride-request"
+  "simulation-service"
 )
 
 for repo in "${SERVICE_REPOS[@]}"; do

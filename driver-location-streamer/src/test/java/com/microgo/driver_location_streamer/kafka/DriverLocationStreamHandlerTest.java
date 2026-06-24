@@ -1,36 +1,59 @@
 package com.microgo.driver_location_streamer.kafka;
 
 import com.microgo.driver_location_streamer.kafka.handler.DriverLocationStreamHandler;
-import com.microgo.driver_location_streamer.model.Location;
-import com.microgo.driver_location_streamer.model.RiderData;
+import com.microgo.driver_location_streamer.model.DriverLocationUpdatedEvent;
 import com.microgo.driver_location_streamer.service.DriverLocationStreamingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class DriverLocationStreamHandlerTest {
 
-    private DriverLocationStreamingService streamingService;
+    private RecordingStreamingService streamingService;
     private DriverLocationStreamHandler handler;
 
     @BeforeEach
     void setUp() {
-        streamingService = mock(DriverLocationStreamingService.class);
+        streamingService = new RecordingStreamingService();
         handler = new DriverLocationStreamHandler(streamingService);
     }
 
     @Test
-    void listenBroadcastsFullRiderDataPayload() {
-        RiderData riderData = RiderData.builder()
-                .identifier("rider-1")
-                .userName("Ada")
-                .location(Location.builder().latitude(48.8584).longitude(2.2945).radius(12).build())
+    void listenBroadcastsDriverLocationEvent() {
+        DriverLocationUpdatedEvent event = DriverLocationUpdatedEvent.builder()
+                .driverId("driver-1")
+                .providerIdentifier("driver-1")
+                .status("CRUISING")
+                .latitude(51.5074)
+                .longitude(-0.1278)
                 .build();
 
-        handler.listen(riderData.getIdentifier(), riderData);
+        handler.listen(event.getDriverId(), event);
 
-        verify(streamingService).streamDriverLocation(riderData);
+        assertThat(streamingService.lastEvent).isEqualTo(event);
+    }
+
+    @Test
+    void listenBackfillsProviderIdentifierFromDriverIdWhenMissing() {
+        DriverLocationUpdatedEvent event = DriverLocationUpdatedEvent.builder()
+                .driverId("driver-2")
+                .status("CRUISING")
+                .latitude(51.5074)
+                .longitude(-0.1278)
+                .build();
+
+        handler.listen(event.getDriverId(), event);
+
+        assertThat(streamingService.lastEvent.getProviderIdentifier()).isEqualTo("driver-2");
+    }
+
+    private static class RecordingStreamingService implements DriverLocationStreamingService {
+        private DriverLocationUpdatedEvent lastEvent;
+
+        @Override
+        public void streamDriverLocation(DriverLocationUpdatedEvent event) {
+            this.lastEvent = event;
+        }
     }
 }

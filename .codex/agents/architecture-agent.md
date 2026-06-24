@@ -32,6 +32,6 @@ Produce a short architecture note with:
 
 - `ride-request` owns ride lifecycle and outbox creation.
 - `outbox-publisher-service` owns reliable publication and acknowledgement state.
-- `location-rider` and `location-saver` together drive rider location availability.
+- `location-saver` owns persistence for incoming rider location events.
 - `gateway`, `discovery`, and `centralized-config` are platform dependencies and should not absorb domain logic.
 - Helm and Terraform changes must stay aligned with local Docker Compose behavior where possible.

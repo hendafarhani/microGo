@@ -1,7 +1,7 @@
 package com.microgo.driver_location_streamer.kafka.configuration;
 
-import com.microgo.driver_location_streamer.kafka.serialization.RiderDataJsonDeserializer;
-import com.microgo.driver_location_streamer.model.RiderData;
+import com.microgo.driver_location_streamer.kafka.serialization.DriverLocationUpdatedEventJsonDeserializer;
+import com.microgo.driver_location_streamer.model.DriverLocationUpdatedEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,21 +21,21 @@ import java.util.Map;
 public class KafkaListenerConfiguration {
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, RiderData> riderLocationListenerFactory(
-            ConsumerFactory<String, RiderData> riderConsumerFactory) {
-        ConcurrentKafkaListenerContainerFactory<String, RiderData> factory = new ConcurrentKafkaListenerContainerFactory<>();
+    public ConcurrentKafkaListenerContainerFactory<String, DriverLocationUpdatedEvent> riderLocationListenerFactory(
+            ConsumerFactory<String, DriverLocationUpdatedEvent> riderConsumerFactory) {
+        ConcurrentKafkaListenerContainerFactory<String, DriverLocationUpdatedEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(riderConsumerFactory);
         return factory;
     }
 
     @Bean
-    public ConsumerFactory<String, RiderData> riderConsumerFactory(
+    public ConsumerFactory<String, DriverLocationUpdatedEvent> riderConsumerFactory(
             @Value("${kafka.bootstrap-servers}") String bootstrapServers) {
         Map<String, Object> config = new HashMap<>();
         config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        ErrorHandlingDeserializer<RiderData> valueDeserializer =
-                new ErrorHandlingDeserializer<>(new RiderDataJsonDeserializer());
+        ErrorHandlingDeserializer<DriverLocationUpdatedEvent> valueDeserializer =
+                new ErrorHandlingDeserializer<>(new DriverLocationUpdatedEventJsonDeserializer());
         return new DefaultKafkaConsumerFactory<>(config, new StringDeserializer(), valueDeserializer);
     }
 }

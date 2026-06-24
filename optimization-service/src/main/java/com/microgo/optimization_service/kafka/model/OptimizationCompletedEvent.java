@@ -1,0 +1,26 @@
+package com.microgo.optimization_service.kafka.model;
+
+import com.microgo.optimization_service.enums.ScenarioType;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.Instant;
+import java.util.UUID;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class OptimizationCompletedEvent {
+    private UUID optimizationRunId;
+    private UUID simulationRunId;
+    private ScenarioType scenario;
+    private String solverStatus;
+    private double baselineAverageWaitSeconds;
+    private double optimizedAverageWaitSeconds;
+    private double baselineCancellationRisk;
+    private double optimizedCancellationRisk;
+    private Instant completedAt;
+}

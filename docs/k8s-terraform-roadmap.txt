@@ -102,7 +102,6 @@ Do:
 - Deploy centralized-config
 - Deploy discovery
 - Deploy ride-request
-- Deploy location-rider
 - Deploy location-saver
 - Deploy gateway
 - After each deploy, check pods and logs and fix config issues immediately

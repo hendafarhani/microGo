@@ -10,7 +10,7 @@
         <module name="driver-location-streamer" />
         <module name="outbox-publisher-service" />
         <module name="centralized-config" />
-        <module name="location-rider" />
+        <module name="dashboard-service" />
         <module name="discovery" />
         <module name="ride-request" />
         <module name="location-saver" />
@@ -24,7 +24,6 @@
       <module name="discovery" options="-parameters" />
       <module name="driver-location-streamer" options="-parameters" />
       <module name="gateway" options="-parameters" />
-      <module name="location-rider" options="-parameters" />
       <module name="location-saver" options="-parameters" />
       <module name="outbox-publisher-service" options="-parameters" />
       <module name="ride-request" options="-parameters" />
