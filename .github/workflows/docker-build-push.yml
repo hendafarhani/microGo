@@ -18,11 +18,16 @@ jobs:
       matrix:
         service:
           - centralized-config
+          - dashboard-service
           - discovery
+          - driver-location-generator
+          - driver-location-streamer
           - gateway
-          - ride-request
-          - outbox-publisher-service
           - location-saver
+          - optimization-service
+          - outbox-publisher-service
+          - ride-request
+          - simulation-service
 
     steps:
       - name: Check out repository
