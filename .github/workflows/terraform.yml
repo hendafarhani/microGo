@@ -27,6 +27,7 @@ concurrency:
 env:
   TERRAFORM_VERSION: "1.5.7"
   TF_WORKING_DIR: terraform/environments/dev
+  TF_BACKEND_CONFIG: ../../backend/dev.hcl
 
 jobs:
   check:
@@ -44,7 +45,7 @@ jobs:
 
       - name: Terraform init
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform init -input=false
+        run: terraform init -input=false -backend=false
 
       - name: Terraform format check
         working-directory: terraform
@@ -60,6 +61,8 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.DO_SPACES_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.DO_SPACES_SECRET_ACCESS_KEY }}
       TF_VAR_do_token: ${{ secrets.DIGITALOCEAN_TOKEN }}
 
     steps:
@@ -73,7 +76,7 @@ jobs:
 
       - name: Terraform init
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform init -input=false
+        run: terraform init -input=false -backend-config=${{ env.TF_BACKEND_CONFIG }}
 
       - name: Terraform plan
         working-directory: ${{ env.TF_WORKING_DIR }}
@@ -86,6 +89,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: dev
     env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.DO_SPACES_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.DO_SPACES_SECRET_ACCESS_KEY }}
       TF_VAR_do_token: ${{ secrets.DIGITALOCEAN_TOKEN }}
 
     steps:
@@ -99,7 +104,7 @@ jobs:
 
       - name: Terraform init
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform init -input=false
+        run: terraform init -input=false -backend-config=${{ env.TF_BACKEND_CONFIG }}
 
       - name: Terraform plan
         working-directory: ${{ env.TF_WORKING_DIR }}
