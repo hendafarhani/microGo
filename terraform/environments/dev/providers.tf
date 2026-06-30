@@ -1,6 +1,14 @@
 terraform {
   required_version = ">= 1.5.0"
 
+  cloud {
+    organization = "YOUR_HCP_ORG"
+
+    workspaces {
+      name = "microgo-dev"
+    }
+  }
+
   required_providers {
     digitalocean = {
       source  = "digitalocean/digitalocean"
