@@ -20,9 +20,10 @@ concurrency:
   group: terraform-dev
   cancel-in-progress: false
 
+# Non-secret config shared by all jobs. TF_API_TOKEN is intentionally NOT here —
+# it is scoped to only the plan/apply jobs so the secret-free fmt job never sees it.
 env:
   TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
-  TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
   TF_WORKSPACE: microgo-dev
   CONFIG_DIRECTORY: terraform/environments/dev
   TERRAFORM_VERSION: "1.5.7"
@@ -50,6 +51,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: fmt
     if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'plan')
+    env:
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -82,6 +85,8 @@ jobs:
     needs: fmt
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply' && github.ref == 'refs/heads/main'
     environment: dev
+    env:
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
