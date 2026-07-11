@@ -45,8 +45,9 @@ and triggers a remote run, so no local plan file is produced:
 Configure these before running the workflow:
 
 - Repository **secret** `TF_API_TOKEN` — an HCP Terraform user/team API token.
-- Repository **variable** `TF_CLOUD_ORGANIZATION` — your HCP org name (must match the
-  `organization` in `environments/dev/providers.tf`).
+- Repository **variable** `TF_CLOUD_ORGANIZATION` — your HCP org name. The `cloud {}`
+  block in `environments/dev/providers.tf` reads it from the environment, so the org
+  name is not committed in code.
 - HCP workspace **variable** `do_token` (Sensitive) — your DigitalOcean API token, set in
   the `microgo-dev` workspace.
 - A `dev` GitHub **Environment** (optionally with required reviewers) to gate apply.
@@ -67,6 +68,7 @@ HCP Terraform, from `terraform/environments/dev`:
 
 ```bash
 export TF_API_TOKEN="your_hcp_terraform_api_token"
+export TF_CLOUD_ORGANIZATION="your_hcp_org"   # the cloud {} block reads the org from here
 terraform init      # detects the cloud {} block and connects to the microgo-dev workspace
 terraform fmt -recursive
 terraform validate

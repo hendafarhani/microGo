@@ -4,8 +4,9 @@ The `dev` environment runs **plan** and **apply** on [HCP Terraform](https://app
 using API-driven remote execution. The GitHub runner never produces a local plan file — it
 only uploads the configuration and triggers a remote run.
 
-- `terraform/environments/dev/providers.tf` declares a `cloud {}` block (replace
-  `YOUR_HCP_ORG` with your real organization name).
+- `terraform/environments/dev/providers.tf` declares a `cloud {}` block. The
+  organization is not written in code — it is read from the `TF_CLOUD_ORGANIZATION`
+  environment variable at runtime.
 - `.github/workflows/terraform.yml` has three jobs:
   - **fmt** — `terraform fmt -check -recursive` on the runner (no token needed).
   - **plan** — speculative remote plan on pull requests, or via `workflow_dispatch`
@@ -16,11 +17,11 @@ only uploads the configuration and triggers a remote run.
 ## One-time manual setup (human only)
 
 These steps are intentionally **not** automated. No **tokens** are hardcoded in this
-repo — they live in HCP Terraform workspace variables and GitHub secrets. The
-**workspace name** (`microgo-dev`) is fixed in `providers.tf`, and the **org name** is
-committed there as well once you replace the `YOUR_HCP_ORG` placeholder during setup
-(step 4). HCP's `cloud {}` block does not accept variables, so both must be literal
-values in code.
+repo — they live in HCP Terraform workspace variables and GitHub secrets. The **org
+name** is not in code either — the `cloud {}` block reads it from the
+`TF_CLOUD_ORGANIZATION` environment variable (set in CI from the GitHub variable, or
+exported locally). The only committed literal is the **workspace name** (`microgo-dev`),
+because the `cloud {}` block can't use `var.*` interpolation for it.
 
 1. **Create the HCP Terraform org and workspace.**
    - Create (or reuse) an organization in HCP Terraform.
@@ -33,13 +34,15 @@ values in code.
 
 3. **Configure GitHub.**
    - Repository **secret** `TF_API_TOKEN` — an HCP Terraform user/team API token.
-   - Repository **variable** `TF_CLOUD_ORGANIZATION` — your HCP org name (must match
-     the `organization` in `providers.tf`).
+   - Repository **variable** `TF_CLOUD_ORGANIZATION` — your HCP org name. The workflow
+     exports it as an environment variable, and the `cloud {}` block reads it to select
+     the organization; nothing needs to be changed in `providers.tf`.
    - Create a `dev` **Environment** in GitHub (optionally with required reviewers) to
      gate the apply job.
 
-4. **Set the org name in code.**
-   - Replace the `YOUR_HCP_ORG` placeholder in `providers.tf` with your real org name.
+4. **Local runs (optional).**
+   - The org name is not stored in code, so before running Terraform locally, export it:
+     `export TF_CLOUD_ORGANIZATION=<your-org>` (matching the GitHub variable).
 
 5. **Migrate state into HCP (one time, locally).**
    - From `terraform/environments/dev`, run a one-time local `terraform init`. Terraform
