@@ -114,23 +114,36 @@ jobs:
           workspace: ${{ env.TF_WORKSPACE }}
           configuration_version: ${{ steps.upload.outputs.configuration_version_id }}
 
-      - name: Guard — verify run is applyable
+      - name: Guard — verify run can be applied
         id: guard
         env:
           PAYLOAD: ${{ steps.run.outputs.payload }}
         run: |
           set -euo pipefail
 
-          # Pull the two fields we care about out of the HCP run payload.
-          confirmable=$(jq -r '.data.attributes.actions.IsConfirmable' <<< "$PAYLOAD")
+          # Read the "confirmable" flag from the HCP run payload. The exact key/casing
+          # the tfci payload uses is version-dependent, so accept every plausible form
+          # (actions-nested or flat; PascalCase, snake_case, or kebab-case) and take the
+          # first non-null. map(select(...)) + index avoids jq's `//` operator, which
+          # would wrongly treat a legitimate `false` as "missing".
+          confirmable=$(jq -r '
+            [ .data.attributes.actions.IsConfirmable,
+              .data.attributes.actions.is_confirmable,
+              .data.attributes.actions["is-confirmable"],
+              .data.attributes.IsConfirmable,
+              .data.attributes.is_confirmable,
+              .data.attributes["is-confirmable"] ]
+            | map(select(. != null))
+            | if length == 0 then "null" else (.[0] | tostring) end
+          ' <<< "$PAYLOAD")
           status=$(jq -r '.data.attributes.status' <<< "$PAYLOAD")
 
-          echo "run status: $status | IsConfirmable: $confirmable"
+          echo "run status: $status | confirmable: $confirmable"
 
-          # If the JSON path drifted or the payload is malformed, jq returns "null".
+          # If none of the known keys were present, the payload shape is unrecognized.
           # Treat that as a hard failure, NOT a reason to silently skip the apply.
           if [ "$confirmable" = "null" ] || [ -z "$confirmable" ]; then
-            echo "::error::Could not read IsConfirmable from the run payload. The HCP API shape may have changed or the run failed to create."
+            echo "::error::Could not read the confirmable flag from the run payload. The HCP API shape may have changed or the run failed to create."
             exit 1
           fi
 

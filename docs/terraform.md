@@ -26,7 +26,10 @@ because the `cloud {}` block can't use `var.*` interpolation for it.
 1. **Create the HCP Terraform org and workspace.**
    - Create (or reuse) an organization in HCP Terraform.
    - Create a workspace named `microgo-dev`.
-   - Set its workflow to **API-driven** and execution mode to **Remote**.
+   - Set execution mode to **Remote** and **do not connect it to VCS**. Both the
+     **CLI-driven** and **API-driven** workflows work with this pipeline (the GitHub
+     Actions upload config and create runs through the API regardless of the label).
+     Choose **CLI-driven** if you also need the one-time local state migration in step 5.
    - Set **Terraform Working Directory** to `environments/dev`. The workflow uploads
      the whole `terraform/` tree (so shared `modules/` are included), and this setting
      makes HCP run from the dev environment inside it. Leaving it blank or set to
@@ -48,10 +51,16 @@ because the `cloud {}` block can't use `var.*` interpolation for it.
    - The org name is not stored in code, so before running Terraform locally, export it:
      `export TF_CLOUD_ORGANIZATION=<your-org>` (matching the GitHub variable).
 
-5. **Migrate state into HCP (one time, locally).**
+5. **Migrate state into HCP (one time) — only if you have existing state.**
+   - **Skip this step entirely for a brand-new environment** with no prior state; the
+     first remote run just creates everything.
    - From `terraform/environments/dev`, run a one-time local `terraform init`. Terraform
      detects the new `cloud {}` block and prompts to migrate existing state into the
      `microgo-dev` workspace. Confirm the migration.
+   - This local migration is a **CLI operation**, so it requires the workspace to accept
+     CLI runs (**CLI-driven** workflow). If the workspace is **API-driven**, migrate the
+     existing state instead through the HCP **States** tab (upload a state version) or the
+     State Versions API — then switch to API-driven if you want.
    - After migration, all plans/applies run remotely on HCP and this environment no
      longer relies on any previously configured state backend. If you were tracking
      state elsewhere (e.g. a local `terraform.tfstate` or a separate remote backend),
