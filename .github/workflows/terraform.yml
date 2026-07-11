@@ -101,9 +101,46 @@ jobs:
           workspace: ${{ env.TF_WORKSPACE }}
           configuration_version: ${{ steps.upload.outputs.configuration_version_id }}
 
+      - name: Guard — verify run is applyable
+        id: guard
+        env:
+          PAYLOAD: ${{ steps.run.outputs.payload }}
+        run: |
+          set -euo pipefail
+
+          # Pull the two fields we care about out of the HCP run payload.
+          confirmable=$(jq -r '.data.attributes.actions.IsConfirmable' <<< "$PAYLOAD")
+          status=$(jq -r '.data.attributes.status' <<< "$PAYLOAD")
+
+          echo "run status: $status | IsConfirmable: $confirmable"
+
+          # If the JSON path drifted or the payload is malformed, jq returns "null".
+          # Treat that as a hard failure, NOT a reason to silently skip the apply.
+          if [ "$confirmable" = "null" ] || [ -z "$confirmable" ]; then
+            echo "::error::Could not read IsConfirmable from the run payload. The HCP API shape may have changed or the run failed to create."
+            exit 1
+          fi
+
+          if [ "$confirmable" = "true" ]; then
+            echo "should_apply=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Not confirmable. The ONLY acceptable reason is "nothing to apply".
+          if [ "$status" = "planned_and_finished" ]; then
+            echo "No infrastructure changes to apply — succeeding without an apply."
+            echo "should_apply=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Anything else (errored, discarded, policy_soft_failed, still planning, …)
+          # is a real problem — fail the job so nobody sees a false-positive green.
+          echo "::error::Run is not confirmable and status is '$status'. Failing so this doesn't look like a successful apply."
+          exit 1
+
       - name: Apply run
+        if: steps.guard.outputs.should_apply == 'true'
         uses: hashicorp/tfc-workflows-github/actions/apply-run@v1.3.2
-        if: fromJSON(steps.run.outputs.payload).data.attributes.actions.IsConfirmable
         with:
           run: ${{ steps.run.outputs.run_id }}
           comment: "Confirmed by ${{ github.actor }} via GitHub Actions"
