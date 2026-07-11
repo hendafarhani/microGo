@@ -27,6 +27,10 @@ because the `cloud {}` block can't use `var.*` interpolation for it.
    - Create (or reuse) an organization in HCP Terraform.
    - Create a workspace named `microgo-dev`.
    - Set its workflow to **API-driven** and execution mode to **Remote**.
+   - Set **Terraform Working Directory** to `environments/dev`. The workflow uploads
+     the whole `terraform/` tree (so shared `modules/` are included), and this setting
+     makes HCP run from the dev environment inside it. Leaving it blank or set to
+     `terraform` causes `No Terraform configuration files found in working directory`.
 
 2. **Add the DigitalOcean token as a workspace variable.**
    - In the `microgo-dev` workspace, add a **Terraform variable** (not env var)

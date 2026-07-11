@@ -25,7 +25,11 @@ concurrency:
 env:
   TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
   TF_WORKSPACE: microgo-dev
-  CONFIG_DIRECTORY: terraform/environments/dev
+  # Upload the whole terraform/ tree, not just environments/dev, because the dev
+  # config references shared modules via ../../modules/*. The workspace's
+  # "Terraform Working Directory" must be set to environments/dev so HCP roots the
+  # run there and those relative module paths resolve inside the uploaded config.
+  CONFIG_DIRECTORY: terraform
   TERRAFORM_VERSION: "1.5.7"
 
 jobs:
