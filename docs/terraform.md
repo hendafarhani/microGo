@@ -45,5 +45,8 @@ values in code.
    - From `terraform/environments/dev`, run a one-time local `terraform init`. Terraform
      detects the new `cloud {}` block and prompts to migrate existing state into the
      `microgo-dev` workspace. Confirm the migration.
-   - After migration, all plans/applies run remotely on HCP; the old DigitalOcean Spaces
-     (S3) backend is no longer used and can be retired.
+   - After migration, all plans/applies run remotely on HCP and this environment no
+     longer relies on any previously configured state backend. If you were tracking
+     state elsewhere (e.g. a local `terraform.tfstate` or a separate remote backend),
+     it is no longer used and can be retired once you've confirmed the HCP workspace
+     holds the current state.
