@@ -15,8 +15,12 @@ only uploads the configuration and triggers a remote run.
 
 ## One-time manual setup (human only)
 
-These steps are intentionally **not** automated. None of the tokens or org/workspace
-names are hardcoded in this repo.
+These steps are intentionally **not** automated. No **tokens** are hardcoded in this
+repo — they live in HCP Terraform workspace variables and GitHub secrets. The
+**workspace name** (`microgo-dev`) is fixed in `providers.tf`, and the **org name** is
+committed there as well once you replace the `YOUR_HCP_ORG` placeholder during setup
+(step 4). HCP's `cloud {}` block does not accept variables, so both must be literal
+values in code.
 
 1. **Create the HCP Terraform org and workspace.**
    - Create (or reuse) an organization in HCP Terraform.
