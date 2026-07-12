@@ -33,7 +33,11 @@ spec:
       {{- end }}
       containers:
         - name: {{ $component.name }}
+          {{- if $component.image.digest }}
+          image: "{{ $component.image.repository }}@{{ $component.image.digest }}"
+          {{- else }}
           image: "{{ $component.image.repository }}:{{ $component.image.tag }}"
+          {{- end }}
           imagePullPolicy: {{ default "IfNotPresent" $root.Values.global.imagePullPolicy }}
           ports:
             - containerPort: {{ $component.containerPort }}

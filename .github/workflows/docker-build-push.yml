@@ -65,7 +65,11 @@ jobs:
           file: ./${{ matrix.service }}/Dockerfile
           push: true
           platforms: linux/amd64
-          tags: ${{ env.REGISTRY }}/${{ env.REGISTRY_REPOSITORY }}/microgo-${{ matrix.service }}:latest
+          # :latest is a moving pointer for humans; the :<git-sha> tag is immutable
+          # and is what the deploy pins to for reproducible re-runs.
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.REGISTRY_REPOSITORY }}/microgo-${{ matrix.service }}:latest
+            ${{ env.REGISTRY }}/${{ env.REGISTRY_REPOSITORY }}/microgo-${{ matrix.service }}:${{ github.sha }}
           labels: |
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.source=${{ github.repository }}
