@@ -9,5 +9,9 @@
 terraform/**/tfplan
 
 helm/**/charts/*.tgz
+# Chart.lock adds no version-pinning value for our file://../common deps
+# (digest is over Chart.yaml's deps, not common's content). It's regenerated
+# at deploy time by `helm dependency build` on Helm 4. Keep it out of git.
+helm/**/Chart.lock
 
 **/target/
