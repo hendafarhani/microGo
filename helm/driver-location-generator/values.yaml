@@ -1,4 +1,4 @@
-fullnameOverride: location-saver
+fullnameOverride: driver-location-generator
 
 namespace:
   name: microgo-dev
@@ -10,42 +10,42 @@ global:
   busyboxImage: busybox:1.36
 
 component:
-  name: location-saver
-  fullnameOverride: location-saver
+  name: driver-location-generator
+  fullnameOverride: driver-location-generator
   replicaCount: 1
   waitFor:
     - { name: config, host: centralized-config, port: 8080 }
-  containerPort: 8084
+  containerPort: 8088
   image:
-    repository: registry.digitalocean.com/hendafarhani-microgo-registry/microgo-location-saver
+    repository: registry.digitalocean.com/hendafarhani-microgo-registry/microgo-driver-location-generator
     tag: latest
   service:
     enabled: true
     type: ClusterIP
-    port: 8084
-    targetPort: 8084
+    port: 8088
+    targetPort: 8088
   configMap:
     enabled: true
     data:
       SPRING_CLOUD_CONFIG_URI: http://centralized-config:8080
-      SPRING_CLOUD_CONFIG_NAME: location-saver
+      SPRING_CLOUD_CONFIG_NAME: driver-location-generator
       SPRING_CONFIG_IMPORT: optional:configserver:http://centralized-config:8080
   secret:
     enabled: false
     stringData: {}
   env:
     - name: SERVER_PORT
-      value: "8084"
+      value: "8088"
     - name: PORT
-      value: "8084"
+      value: "8088"
   readinessProbe:
     tcpSocket:
-      port: 8084
+      port: 8088
     initialDelaySeconds: 20
     periodSeconds: 10
   livenessProbe:
     tcpSocket:
-      port: 8084
+      port: 8088
     initialDelaySeconds: 40
     periodSeconds: 15
   resources: {}

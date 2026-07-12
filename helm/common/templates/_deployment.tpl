@@ -22,6 +22,15 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if or $component.waitFor $component.initContainers }}
+      initContainers:
+        {{- range $component.waitFor }}
+        {{- include "common.waitFor" (dict "wait" . "root" $root) | nindent 8 }}
+        {{- end }}
+        {{- with $component.initContainers }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
       containers:
         - name: {{ $component.name }}
           image: "{{ $component.image.repository }}:{{ $component.image.tag }}"

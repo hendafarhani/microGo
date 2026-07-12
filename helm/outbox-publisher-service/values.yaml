@@ -6,11 +6,15 @@ namespace:
 global:
   imagePullPolicy: IfNotPresent
   imagePullSecrets: []
+  # Image used by wait-for init containers; override to mirror into a private registry.
+  busyboxImage: busybox:1.36
 
 component:
   name: outbox-publisher-service
   fullnameOverride: outbox-publisher-service
   replicaCount: 1
+  waitFor:
+    - { name: config, host: centralized-config, port: 8080 }
   containerPort: 8086
   image:
     repository: registry.digitalocean.com/hendafarhani-microgo-registry/microgo-outbox-publisher-service

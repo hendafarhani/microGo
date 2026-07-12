@@ -6,11 +6,15 @@ namespace:
 global:
   imagePullPolicy: IfNotPresent
   imagePullSecrets: []
+  # Image used by wait-for init containers; override to mirror into a private registry.
+  busyboxImage: busybox:1.36
 
 component:
   name: gateway
   fullnameOverride: gateway
   replicaCount: 1
+  waitFor:
+    - { name: discovery, host: discovery, port: 8082 }
   containerPort: 8010
   image:
     repository: registry.digitalocean.com/hendafarhani-microgo-registry/microgo-gateway
