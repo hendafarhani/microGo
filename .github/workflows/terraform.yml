@@ -1,0 +1,172 @@
+name: Terraform (dev)
+
+on:
+  pull_request:
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform.yml"
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Action to run"
+        type: choice
+        required: true
+        default: plan
+        options:
+          - plan
+          - apply
+
+concurrency:
+  group: terraform-dev
+  cancel-in-progress: false
+
+# Non-secret config shared by all jobs. TF_API_TOKEN is intentionally NOT here —
+# it is scoped to only the plan/apply jobs so the secret-free fmt job never sees it.
+env:
+  TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
+  TF_WORKSPACE: microgo-dev
+  # Upload the whole terraform/ tree, not just environments/dev, because the dev
+  # config references shared modules via ../../modules/*. The workspace's
+  # "Terraform Working Directory" must be set to environments/dev so HCP roots the
+  # run there and those relative module paths resolve inside the uploaded config.
+  CONFIG_DIRECTORY: terraform
+  TERRAFORM_VERSION: "1.5.7"
+
+jobs:
+  fmt:
+    name: Format check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform fmt
+        working-directory: terraform
+        run: terraform fmt -check -recursive
+
+  plan:
+    name: Speculative plan
+    runs-on: ubuntu-latest
+    needs: fmt
+    # Forked PRs don't receive repo secrets/vars, so skip (don't fail) planning for
+    # them — otherwise every fork PR gets a red check purely from a blank TF_API_TOKEN.
+    if: >-
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'plan')
+    env:
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Upload configuration
+        id: upload
+        uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.3.2
+        with:
+          workspace: ${{ env.TF_WORKSPACE }}
+          directory: ${{ env.CONFIG_DIRECTORY }}
+          speculative: true
+
+      - name: Create plan run
+        id: run
+        uses: hashicorp/tfc-workflows-github/actions/create-run@v1.3.2
+        with:
+          workspace: ${{ env.TF_WORKSPACE }}
+          configuration_version: ${{ steps.upload.outputs.configuration_version_id }}
+          plan_only: true
+
+      - name: Get plan output
+        id: plan-output
+        uses: hashicorp/tfc-workflows-github/actions/plan-output@v1.3.2
+        with:
+          plan: ${{ steps.run.outputs.plan_id }}
+
+  apply:
+    name: Apply
+    runs-on: ubuntu-latest
+    needs: fmt
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply' && github.ref == 'refs/heads/main'
+    environment: dev
+    env:
+      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Upload configuration
+        id: upload
+        uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.3.2
+        with:
+          workspace: ${{ env.TF_WORKSPACE }}
+          directory: ${{ env.CONFIG_DIRECTORY }}
+          speculative: false
+
+      - name: Create apply run
+        id: run
+        uses: hashicorp/tfc-workflows-github/actions/create-run@v1.3.2
+        with:
+          workspace: ${{ env.TF_WORKSPACE }}
+          configuration_version: ${{ steps.upload.outputs.configuration_version_id }}
+
+      - name: Guard — verify run can be applied
+        id: guard
+        env:
+          PAYLOAD: ${{ steps.run.outputs.payload }}
+        run: |
+          set -euo pipefail
+
+          # Read the "confirmable" flag from the HCP run payload. The exact key/casing
+          # the tfci payload uses is version-dependent, so accept every plausible form
+          # (actions-nested or flat; PascalCase, snake_case, or kebab-case) and take the
+          # first non-null. map(select(...)) + index avoids jq's `//` operator, which
+          # would wrongly treat a legitimate `false` as "missing".
+          confirmable=$(jq -r '
+            [ .data.attributes.actions.IsConfirmable,
+              .data.attributes.actions.is_confirmable,
+              .data.attributes.actions["is-confirmable"],
+              .data.attributes.IsConfirmable,
+              .data.attributes.is_confirmable,
+              .data.attributes["is-confirmable"] ]
+            | map(select(. != null))
+            | if length == 0 then "null" else (.[0] | tostring) end
+          ' <<< "$PAYLOAD")
+          status=$(jq -r '.data.attributes.status' <<< "$PAYLOAD")
+
+          echo "run status: $status | confirmable: $confirmable"
+
+          # If none of the known keys were present, the payload shape is unrecognized.
+          # Treat that as a hard failure, NOT a reason to silently skip the apply.
+          if [ "$confirmable" = "null" ] || [ -z "$confirmable" ]; then
+            echo "::error::Could not read the confirmable flag from the run payload. The HCP API shape may have changed or the run failed to create."
+            exit 1
+          fi
+
+          if [ "$confirmable" = "true" ]; then
+            echo "should_apply=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Not confirmable. The ONLY acceptable reason is "nothing to apply".
+          if [ "$status" = "planned_and_finished" ]; then
+            echo "No infrastructure changes to apply — succeeding without an apply."
+            echo "should_apply=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Anything else (errored, discarded, policy_soft_failed, still planning, …)
+          # is a real problem — fail the job so nobody sees a false-positive green.
+          echo "::error::Run is not confirmable and status is '$status'. Failing so this doesn't look like a successful apply."
+          exit 1
+
+      - name: Apply run
+        if: steps.guard.outputs.should_apply == 'true'
+        uses: hashicorp/tfc-workflows-github/actions/apply-run@v1.3.2
+        with:
+          run: ${{ steps.run.outputs.run_id }}
+          comment: "Confirmed by ${{ github.actor }} via GitHub Actions"
