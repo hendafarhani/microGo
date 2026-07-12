@@ -11,6 +11,8 @@ component:
   name: driver-location-streamer
   fullnameOverride: driver-location-streamer
   replicaCount: 1
+  waitFor:
+    - { name: config, host: centralized-config, port: 8080 }
   containerPort: 8085
   image:
     repository: registry.digitalocean.com/hendafarhani-microgo-registry/microgo-driver-location-streamer

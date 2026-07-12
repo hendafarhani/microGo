@@ -11,6 +11,8 @@ component:
   name: discovery
   fullnameOverride: discovery
   replicaCount: 1
+  waitFor:
+    - { name: config, host: centralized-config, port: 8080 }
   containerPort: 8082
   image:
     repository: registry.digitalocean.com/hendafarhani-microgo-registry/microgo-discovery

@@ -1,4 +1,4 @@
-fullnameOverride: location-saver
+fullnameOverride: simulation-service
 
 namespace:
   name: microgo-dev
@@ -8,42 +8,42 @@ global:
   imagePullSecrets: []
 
 component:
-  name: location-saver
-  fullnameOverride: location-saver
+  name: simulation-service
+  fullnameOverride: simulation-service
   replicaCount: 1
   waitFor:
     - { name: config, host: centralized-config, port: 8080 }
-  containerPort: 8084
+  containerPort: 8089
   image:
-    repository: registry.digitalocean.com/hendafarhani-microgo-registry/microgo-location-saver
+    repository: registry.digitalocean.com/hendafarhani-microgo-registry/microgo-simulation-service
     tag: latest
   service:
     enabled: true
     type: ClusterIP
-    port: 8084
-    targetPort: 8084
+    port: 8089
+    targetPort: 8089
   configMap:
     enabled: true
     data:
       SPRING_CLOUD_CONFIG_URI: http://centralized-config:8080
-      SPRING_CLOUD_CONFIG_NAME: location-saver
+      SPRING_CLOUD_CONFIG_NAME: simulation-service
       SPRING_CONFIG_IMPORT: optional:configserver:http://centralized-config:8080
   secret:
     enabled: false
     stringData: {}
   env:
     - name: SERVER_PORT
-      value: "8084"
+      value: "8089"
     - name: PORT
-      value: "8084"
+      value: "8089"
   readinessProbe:
     tcpSocket:
-      port: 8084
+      port: 8089
     initialDelaySeconds: 20
     periodSeconds: 10
   livenessProbe:
     tcpSocket:
-      port: 8084
+      port: 8089
     initialDelaySeconds: 40
     periodSeconds: 15
   resources: {}

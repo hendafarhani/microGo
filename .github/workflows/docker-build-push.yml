@@ -24,7 +24,6 @@ jobs:
           - driver-location-streamer
           - gateway
           - location-saver
-          - optimization-service
           - outbox-publisher-service
           - ride-request
           - simulation-service

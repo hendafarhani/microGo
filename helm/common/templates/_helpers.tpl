@@ -50,3 +50,12 @@ app.kubernetes.io/component: {{ $component.name }}
   value: {{ .value | quote }}
 {{- end -}}
 {{- end -}}
+
+{{- define "common.waitFor" -}}
+- name: wait-for-{{ .name }}
+  image: busybox:1.36
+  command:
+    - sh
+    - -c
+    - "until nc -w 2 {{ .host }} {{ .port }} </dev/null 2>/dev/null; do echo waiting for {{ .host }}:{{ .port }}; sleep 3; done"
+{{- end -}}
