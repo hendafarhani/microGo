@@ -55,11 +55,25 @@ app.kubernetes.io/component: {{ $component.name }}
 {{- $root := .root -}}
 {{- $wait := .wait -}}
 {{- $global := $root.Values.global | default dict -}}
+{{- /* Per-item override falls back to a global default; 0/unset means wait indefinitely (backward compatible). */ -}}
+{{- $timeout := $wait.timeoutSeconds | default $global.waitForTimeoutSeconds | default 0 -}}
+{{- $interval := $wait.intervalSeconds | default $global.waitForIntervalSeconds | default 3 -}}
 - name: wait-for-{{ $wait.name }}
   image: {{ $global.busyboxImage | default "busybox:1.36" }}
   imagePullPolicy: {{ $global.imagePullPolicy | default "IfNotPresent" }}
   command:
     - sh
     - -c
-    - "until nc -w 2 {{ $wait.host }} {{ $wait.port }} </dev/null 2>/dev/null; do echo waiting for {{ $wait.host }}:{{ $wait.port }}; sleep 3; done"
+    - |
+      timeout={{ $timeout }}
+      interval={{ $interval }}
+      deadline=$(( $(date +%s) + timeout ))
+      until nc -w 2 {{ $wait.host }} {{ $wait.port }} </dev/null 2>/dev/null; do
+        if [ "$timeout" -gt 0 ] && [ "$(date +%s)" -ge "$deadline" ]; then
+          echo "timed out after ${timeout}s waiting for {{ $wait.host }}:{{ $wait.port }}" >&2
+          exit 1
+        fi
+        echo "waiting for {{ $wait.host }}:{{ $wait.port }}"
+        sleep "$interval"
+      done
 {{- end -}}
