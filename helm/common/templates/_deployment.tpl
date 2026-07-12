@@ -25,7 +25,7 @@ spec:
       {{- if or $component.waitFor $component.initContainers }}
       initContainers:
         {{- range $component.waitFor }}
-        {{- include "common.waitFor" . | nindent 8 }}
+        {{- include "common.waitFor" (dict "wait" . "root" $root) | nindent 8 }}
         {{- end }}
         {{- with $component.initContainers }}
         {{- toYaml . | nindent 8 }}

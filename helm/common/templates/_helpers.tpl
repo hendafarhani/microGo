@@ -52,10 +52,14 @@ app.kubernetes.io/component: {{ $component.name }}
 {{- end -}}
 
 {{- define "common.waitFor" -}}
-- name: wait-for-{{ .name }}
-  image: busybox:1.36
+{{- $root := .root -}}
+{{- $wait := .wait -}}
+{{- $global := $root.Values.global | default dict -}}
+- name: wait-for-{{ $wait.name }}
+  image: {{ $global.busyboxImage | default "busybox:1.36" }}
+  imagePullPolicy: {{ $global.imagePullPolicy | default "IfNotPresent" }}
   command:
     - sh
     - -c
-    - "until nc -w 2 {{ .host }} {{ .port }} </dev/null 2>/dev/null; do echo waiting for {{ .host }}:{{ .port }}; sleep 3; done"
+    - "until nc -w 2 {{ $wait.host }} {{ $wait.port }} </dev/null 2>/dev/null; do echo waiting for {{ $wait.host }}:{{ $wait.port }}; sleep 3; done"
 {{- end -}}
