@@ -25,22 +25,74 @@ env:
   REGISTRY_REPOSITORY: hendafarhani-microgo-registry
 
 jobs:
+  # Figure out which services actually need rebuilding for this push, so a
+  # one-line change in a single service no longer rebuilds all of them.
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.select.outputs.services }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            # Shared build inputs: the parent POM and this workflow affect every
+            # image, so a change here forces a full rebuild.
+            shared:
+              - 'pom.xml'
+              - '.github/workflows/docker-build-push.yml'
+            centralized-config: ['centralized-config/**']
+            dashboard-service: ['dashboard-service/**']
+            discovery: ['discovery/**']
+            driver-location-generator: ['driver-location-generator/**']
+            driver-location-streamer: ['driver-location-streamer/**']
+            gateway: ['gateway/**']
+            location-saver: ['location-saver/**']
+            outbox-publisher-service: ['outbox-publisher-service/**']
+            ride-request: ['ride-request/**']
+            simulation-service: ['simulation-service/**']
+
+      - name: Select services to build
+        id: select
+        env:
+          # Full deployable set (mirrors the build matrix; excludes optimization-service).
+          ALL_SERVICES: >-
+            centralized-config dashboard-service discovery
+            driver-location-generator driver-location-streamer gateway
+            location-saver outbox-publisher-service ride-request
+            simulation-service
+          # JSON array of filter keys that matched (always valid JSON, "[]" if none).
+          MATCHED: ${{ steps.filter.outputs.changes }}
+          SHARED: ${{ steps.filter.outputs.shared }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          # Manual runs, or changes to shared files (parent POM / this workflow),
+          # rebuild everything. Otherwise build only the services that changed.
+          if [ "$EVENT" = "workflow_dispatch" ] || [ "$SHARED" = "true" ]; then
+            services=$(printf '%s\n' $ALL_SERVICES | jq -R . | jq -cs .)
+          else
+            # Drop the "shared" sentinel; keep the changed service keys.
+            services=$(printf '%s' "$MATCHED" | jq -c 'map(select(. != "shared"))')
+          fi
+          echo "services=$services" >> "$GITHUB_OUTPUT"
+          echo "Services to build: $services"
+
   docker:
+    needs: detect
+    # Skip cleanly when nothing service-related changed (empty matrix).
+    if: ${{ needs.detect.outputs.services != '[]' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        service:
-          - centralized-config
-          - dashboard-service
-          - discovery
-          - driver-location-generator
-          - driver-location-streamer
-          - gateway
-          - location-saver
-          - outbox-publisher-service
-          - ride-request
-          - simulation-service
+        service: ${{ fromJSON(needs.detect.outputs.services) }}
 
     steps:
       - name: Check out repository
