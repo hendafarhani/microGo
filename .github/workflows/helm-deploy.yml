@@ -1,0 +1,130 @@
+name: Deploy Helm Charts
+
+# Manual deploy of the microservice Helm charts to the DigitalOcean cluster.
+# Deployable set = all services except optimization-service (mirrors the build matrix).
+#
+# Startup ordering (config -> discovery -> gateway) is enforced at RUNTIME by the
+# wait-for init containers baked into the charts, so the services can be deployed
+# in parallel here: gateway's pod will sit in Init until discovery is reachable,
+# discovery until centralized-config is reachable, etc.
+#
+# Chart.lock is intentionally NOT committed (see .gitignore). `helm dependency build`
+# on Helm 4 regenerates it in the runner and vendors the `common` library chart.
+#
+# Required repository secrets:
+#   DIGITALOCEAN_ACCESS_TOKEN - DO API token with Kubernetes + registry read access
+#                               (may be the same full-scope token used for DOCR_TOKEN)
+
+on:
+  # Manual only. Deploys never run on their own: once the cluster is up, pods and
+  # deployments change only when this job is triggered by hand (Run workflow), so
+  # there is no automatic redeploy/drift on pushes to main.
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Values overlay to apply (values-<env>.yaml)
+        type: choice
+        options:
+          - dev
+          - prod
+        default: dev
+      cluster_name:
+        description: DigitalOcean Kubernetes cluster name
+        type: string
+        default: microgo-dev
+      namespace:
+        description: Kubernetes namespace to deploy into
+        type: string
+        default: microgo-dev
+      image_tag:
+        description: Immutable image tag to deploy (leave blank to pin to this commit's SHA)
+        type: string
+        default: ""
+
+env:
+  HELM_VERSION: v4.2.3
+  ENVIRONMENT: ${{ inputs.environment }}
+  CLUSTER_NAME: ${{ inputs.cluster_name }}
+  NAMESPACE: ${{ inputs.namespace }}
+  # Blank input -> the SHA of the commit this deploy runs against (main HEAD),
+  # which the build workflow tags immutably. Re-running the same deploy run
+  # redeploys the exact same images; never a moved :latest.
+  IMAGE_TAG: ${{ inputs.image_tag || github.sha }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - centralized-config
+          - dashboard-service
+          - discovery
+          - driver-location-generator
+          - driver-location-streamer
+          - gateway
+          - location-saver
+          - outbox-publisher-service
+          - ride-request
+          - simulation-service
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Install Helm (pinned)
+        uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubeconfig for the cluster
+        run: doctl kubernetes cluster kubeconfig save "${{ env.CLUSTER_NAME }}"
+
+      - name: Resolve image digest (verifies the image exists)
+        # Look up the chosen tag in the registry and read its immutable manifest
+        # digest. If the tag isn't there yet (e.g. the build for this commit hasn't
+        # finished), fail fast with a clear message instead of letting pods land in
+        # ImagePullBackOff on the cluster.
+        run: |
+          # pipefail: a doctl auth/network failure must surface as a real error,
+          # not get masked by the trailing awk and misreported as "image not found".
+          set -euo pipefail
+          repo="microgo-${{ matrix.service }}"
+          digest=$(doctl registry repository list-tags "$repo" \
+            --format Tag,ManifestDigest --no-header \
+            | awk -v t="${{ env.IMAGE_TAG }}" '$1 == t { print $2 }')
+          if [ -z "$digest" ]; then
+            echo "::error::Image $repo:${{ env.IMAGE_TAG }} not found in registry. Has the build for this commit finished?"
+            exit 1
+          fi
+          echo "Resolved $repo:${{ env.IMAGE_TAG }} -> $digest"
+          echo "IMAGE_DIGEST=$digest" >> "$GITHUB_ENV"
+
+      - name: Build chart dependencies
+        # Regenerates Chart.lock (gitignored) and vendors ../common into charts/.
+        # On Helm 4 this works whether or not a lock file exists.
+        run: helm dependency build "helm/${{ matrix.service }}"
+
+      - name: Deploy ${{ matrix.service }}
+        # No `--wait` here: matrix jobs deploy in parallel, and a service's pod may
+        # sit in Init until a sibling release (e.g. discovery for gateway) is applied.
+        # Applying all releases first lets the wait-for init containers resolve; the
+        # rollout-status step below is the real readiness gate.
+        # Pin by digest (repo@sha256:...) so the running pod is cryptographically tied
+        # to one image, immune to a :latest or :<sha> tag being moved later.
+        run: |
+          helm upgrade --install "${{ matrix.service }}" "helm/${{ matrix.service }}" \
+            --namespace "${{ env.NAMESPACE }}" \
+            --create-namespace \
+            --set namespace.name="${{ env.NAMESPACE }}" \
+            --set component.image.digest="${{ env.IMAGE_DIGEST }}" \
+            --values "helm/${{ matrix.service }}/values-${{ env.ENVIRONMENT }}.yaml"
+
+      - name: Wait for rollout
+        run: kubectl -n "${{ env.NAMESPACE }}" rollout status "deployment/${{ matrix.service }}" --timeout=10m
