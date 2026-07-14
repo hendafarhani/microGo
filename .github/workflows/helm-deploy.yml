@@ -92,6 +92,9 @@ jobs:
         # finished), fail fast with a clear message instead of letting pods land in
         # ImagePullBackOff on the cluster.
         run: |
+          # pipefail: a doctl auth/network failure must surface as a real error,
+          # not get masked by the trailing awk and misreported as "image not found".
+          set -euo pipefail
           repo="microgo-${{ matrix.service }}"
           digest=$(doctl registry repository list-tags "$repo" \
             --format Tag,ManifestDigest --no-header \
