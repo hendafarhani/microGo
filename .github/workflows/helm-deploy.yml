@@ -100,10 +100,11 @@ jobs:
       - name: Resolve image digest (verifies the image exists)
         # Resolve the tag to deploy and read its immutable manifest digest.
         #  - Explicit image_tag: look it up and fail fast if it isn't there.
-        #  - Blank image_tag: walk main's history from HEAD and pick the nearest
-        #    ancestor commit whose image exists in this service's repo. This keeps
-        #    the deploy working after infra-only merges (which skip the image
-        #    build) without silently deploying a moved tag.
+        #  - Blank image_tag: walk the dispatched ref's first-parent history
+        #    (main, in the normal case) from HEAD and pick the nearest ancestor
+        #    commit whose image exists in this service's repo. This keeps the
+        #    deploy working after infra-only merges (which skip the image build)
+        #    without silently deploying a moved tag.
         # Either way, a missing image fails here with a clear message instead of
         # letting pods land in ImagePullBackOff on the cluster.
         run: |
