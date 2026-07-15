@@ -37,7 +37,7 @@ on:
         type: string
         default: microgo-dev
       image_tag:
-        description: Immutable image tag to deploy (leave blank to pin to this commit's SHA)
+        description: Immutable image tag to deploy (leave blank to deploy HEAD's code state — the nearest ancestor commit that has images)
         type: string
         default: ""
 
@@ -46,10 +46,13 @@ env:
   ENVIRONMENT: ${{ inputs.environment }}
   CLUSTER_NAME: ${{ inputs.cluster_name }}
   NAMESPACE: ${{ inputs.namespace }}
-  # Blank input -> the SHA of the commit this deploy runs against (main HEAD),
-  # which the build workflow tags immutably. Re-running the same deploy run
-  # redeploys the exact same images; never a moved :latest.
-  IMAGE_TAG: ${{ inputs.image_tag || github.sha }}
+  # The explicit tag to deploy, or empty. A blank tag is resolved per-service in
+  # the "Resolve image digest" step below: it walks main's history from HEAD and
+  # picks the nearest ancestor commit that actually has an image. Infra-only
+  # commits (Helm/Terraform/docs) skip the image build, so HEAD itself often has
+  # no image; its code state is identical to the last built ancestor, whose image
+  # is therefore the correct one to deploy. Re-running redeploys the same images.
+  IMAGE_TAG: ${{ inputs.image_tag }}
 
 jobs:
   deploy:
@@ -72,6 +75,11 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+        with:
+          # Full history so a blank image_tag can walk back from HEAD to the
+          # nearest ancestor commit that has images (infra-only commits on top
+          # of HEAD carry no image but don't change service code).
+          fetch-depth: 0
 
       - name: Install Helm (pinned)
         uses: azure/setup-helm@v4
@@ -87,23 +95,57 @@ jobs:
         run: doctl kubernetes cluster kubeconfig save "${{ env.CLUSTER_NAME }}"
 
       - name: Resolve image digest (verifies the image exists)
-        # Look up the chosen tag in the registry and read its immutable manifest
-        # digest. If the tag isn't there yet (e.g. the build for this commit hasn't
-        # finished), fail fast with a clear message instead of letting pods land in
-        # ImagePullBackOff on the cluster.
+        # Resolve the tag to deploy and read its immutable manifest digest.
+        #  - Explicit image_tag: look it up and fail fast if it isn't there.
+        #  - Blank image_tag: walk main's history from HEAD and pick the nearest
+        #    ancestor commit whose image exists in this service's repo. This keeps
+        #    the deploy working after infra-only merges (which skip the image
+        #    build) without silently deploying a moved tag.
+        # Either way, a missing image fails here with a clear message instead of
+        # letting pods land in ImagePullBackOff on the cluster.
         run: |
           # pipefail: a doctl auth/network failure must surface as a real error,
-          # not get masked by the trailing awk and misreported as "image not found".
+          # not get masked by a downstream awk and misreported as "image not found".
           set -euo pipefail
           repo="microgo-${{ matrix.service }}"
-          digest=$(doctl registry repository list-tags "$repo" \
-            --format Tag,ManifestDigest --no-header \
-            | awk -v t="${{ env.IMAGE_TAG }}" '$1 == t { print $2 }')
-          if [ -z "$digest" ]; then
-            echo "::error::Image $repo:${{ env.IMAGE_TAG }} not found in registry. Has the build for this commit finished?"
-            exit 1
+
+          # Pull this repo's tags once; look up a digest by exact tag match.
+          tags="$(doctl registry repository list-tags "$repo" \
+            --format Tag,ManifestDigest --no-header)"
+          digest_for() { awk -v t="$1" '$1 == t { print $2 }' <<< "$tags"; }
+
+          explicit="${{ env.IMAGE_TAG }}"
+          if [ -n "$explicit" ]; then
+            tag="$explicit"
+            digest="$(digest_for "$tag")"
+            if [ -z "$digest" ]; then
+              echo "::error::Image $repo:$tag not found in registry."
+              exit 1
+            fi
+          else
+            # Nearest built ancestor: git rev-list yields HEAD-first, so the first
+            # commit with an image is the closest one.
+            tag=""
+            digest=""
+            for sha in $(git rev-list HEAD); do
+              d="$(digest_for "$sha")"
+              if [ -n "$d" ]; then
+                tag="$sha"
+                digest="$d"
+                break
+              fi
+            done
+            if [ -z "$digest" ]; then
+              echo "::error::No image found in $repo for HEAD or any ancestor commit. Has any build finished?"
+              exit 1
+            fi
+            if [ "$tag" != "${{ github.sha }}" ]; then
+              echo "::notice::HEAD (${{ github.sha }}) has no image in $repo; deploying nearest built ancestor $tag."
+            fi
           fi
-          echo "Resolved $repo:${{ env.IMAGE_TAG }} -> $digest"
+
+          echo "Resolved $repo:$tag -> $digest"
+          echo "IMAGE_TAG=$tag" >> "$GITHUB_ENV"
           echo "IMAGE_DIGEST=$digest" >> "$GITHUB_ENV"
 
       - name: Build chart dependencies
