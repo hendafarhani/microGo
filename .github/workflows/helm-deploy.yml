@@ -143,7 +143,30 @@ jobs:
               exit 1
             fi
             if [ "$tag" != "${{ github.sha }}" ]; then
-              echo "::notice::HEAD (${{ github.sha }}) has no image in $repo; deploying nearest built ancestor $tag."
+              # HEAD has no image of its own. That's expected only when every
+              # change since $tag is infra-only (the build workflow skips those).
+              # If any service-code path changed, HEAD *should* have its own image
+              # -- its absence means that build is still in flight or failed, and
+              # silently shipping $tag would deploy older code than HEAD. Fail fast.
+              #
+              # The globs below MUST mirror paths-ignore in docker-build-push.yml.
+              # In `case`, * spans / (so helm/* == helm/**, *.md == **.md).
+              is_infra_path() {
+                case "$1" in
+                  helm/*|terraform/*|docs/*|mysql-init/*|postgres-init/*|scripts/*) return 0 ;;
+                  *.md|docker-compose.yml) return 0 ;;
+                  .github/workflows/helm-deploy.yml|.github/workflows/terraform.yml) return 0 ;;
+                  *) return 1 ;;
+                esac
+              }
+              while IFS= read -r f; do
+                [ -z "$f" ] && continue
+                if ! is_infra_path "$f"; then
+                  echo "::error::HEAD (${{ github.sha }}) has no image in $repo and changed a non-infra path since $tag: $f. The build for HEAD is likely still running or failed -- wait for it, or pass an explicit image_tag."
+                  exit 1
+                fi
+              done <<< "$(git diff --name-only "$tag" HEAD)"
+              echo "::notice::HEAD (${{ github.sha }}) is infra-only since $tag; deploying nearest built ancestor $tag for $repo."
             fi
           fi
 
