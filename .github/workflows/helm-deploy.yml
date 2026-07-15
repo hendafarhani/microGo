@@ -123,11 +123,14 @@ jobs:
               exit 1
             fi
           else
-            # Nearest built ancestor: git rev-list yields HEAD-first, so the first
-            # commit with an image is the closest one.
+            # Nearest built ancestor on the mainline. --first-parent stays on
+            # main's own commit chain (each `git rev-list` entry is HEAD-first,
+            # so the first with an image is the closest): images are only built
+            # for main pushes, so a feature-branch commit pulled in by a merge
+            # must never be selected even though it's reachable from HEAD.
             tag=""
             digest=""
-            for sha in $(git rev-list HEAD); do
+            for sha in $(git rev-list --first-parent HEAD); do
               d="$(digest_for "$sha")"
               if [ -n "$d" ]; then
                 tag="$sha"
