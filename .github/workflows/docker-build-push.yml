@@ -4,6 +4,20 @@ on:
   push:
     branches:
       - main
+    # Don't rebuild/push all microservice images for changes that touch no
+    # service code — Helm charts, Terraform, docs, DB init, and infra-only
+    # workflows. A push that also touches service code still triggers a build.
+    paths-ignore:
+      - "helm/**"
+      - "terraform/**"
+      - "docs/**"
+      - "mysql-init/**"
+      - "postgres-init/**"
+      - "scripts/**"
+      - "**.md"
+      - "docker-compose.yml"
+      - ".github/workflows/helm-deploy.yml"
+      - ".github/workflows/terraform.yml"
   workflow_dispatch:
 
 env:
