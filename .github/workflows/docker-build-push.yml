@@ -41,22 +41,34 @@ jobs:
         uses: dorny/paths-filter@v3
         id: filter
         with:
+          # NOTE: the services are git submodules (see .gitmodules), so a service
+          # update lands as a *gitlink bump* -- the push diff shows the bare path
+          # (e.g. `gateway`), NOT files under `gateway/`. Each filter therefore
+          # matches BOTH the bare submodule path and `<svc>/**` (the latter is
+          # future-proofing for any in-repo files); a `<svc>/**`-only filter would
+          # never match a pointer bump and the service would silently never build.
+          #
+          # DRY-RUN REMINDER: path-filter behavior against submodule bumps can't be
+          # proven without an actual run. When changing these filters, verify on a
+          # throwaway branch that (a) bumping one submodule builds only that service
+          # and (b) a `shared` change (root pom.xml) rebuilds all 10.
           filters: |
-            # Shared build inputs: the parent POM and this workflow affect every
-            # image, so a change here forces a full rebuild.
+            # Shared build inputs: the parent POM, this workflow, and the submodule
+            # map all affect every image, so a change here forces a full rebuild.
             shared:
               - 'pom.xml'
               - '.github/workflows/docker-build-push.yml'
-            centralized-config: ['centralized-config/**']
-            dashboard-service: ['dashboard-service/**']
-            discovery: ['discovery/**']
-            driver-location-generator: ['driver-location-generator/**']
-            driver-location-streamer: ['driver-location-streamer/**']
-            gateway: ['gateway/**']
-            location-saver: ['location-saver/**']
-            outbox-publisher-service: ['outbox-publisher-service/**']
-            ride-request: ['ride-request/**']
-            simulation-service: ['simulation-service/**']
+              - '.gitmodules'
+            centralized-config: ['centralized-config', 'centralized-config/**']
+            dashboard-service: ['dashboard-service', 'dashboard-service/**']
+            discovery: ['discovery', 'discovery/**']
+            driver-location-generator: ['driver-location-generator', 'driver-location-generator/**']
+            driver-location-streamer: ['driver-location-streamer', 'driver-location-streamer/**']
+            gateway: ['gateway', 'gateway/**']
+            location-saver: ['location-saver', 'location-saver/**']
+            outbox-publisher-service: ['outbox-publisher-service', 'outbox-publisher-service/**']
+            ride-request: ['ride-request', 'ride-request/**']
+            simulation-service: ['simulation-service', 'simulation-service/**']
 
       - name: Select services to build
         id: select
