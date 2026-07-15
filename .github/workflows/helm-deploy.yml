@@ -47,11 +47,14 @@ env:
   CLUSTER_NAME: ${{ inputs.cluster_name }}
   NAMESPACE: ${{ inputs.namespace }}
   # The explicit tag to deploy, or empty. A blank tag is resolved per-service in
-  # the "Resolve image digest" step below: it walks main's history from HEAD and
-  # picks the nearest ancestor commit that actually has an image. Infra-only
-  # commits (Helm/Terraform/docs) skip the image build, so HEAD itself often has
-  # no image; its code state is identical to the last built ancestor, whose image
-  # is therefore the correct one to deploy. Re-running redeploys the same images.
+  # the "Resolve image digest" step below: it walks the first-parent history of
+  # the dispatched ref (main, in the normal case) from HEAD and picks the nearest
+  # ancestor commit that actually has an image. Infra-only commits (Helm/Terraform
+  # /docs) skip the image build, so HEAD itself often has no image; its code state
+  # is identical to the last built ancestor, whose image is therefore the correct
+  # one to deploy. Re-running redeploys the same images. (Note: images are only
+  # built from main pushes, so dispatching this deploy on a non-main ref with a
+  # blank tag may find no image and fail fast -- pass an explicit image_tag there.)
   IMAGE_TAG: ${{ inputs.image_tag }}
 
 jobs:
@@ -123,21 +126,23 @@ jobs:
               exit 1
             fi
           else
-            # Nearest built ancestor on the mainline. --first-parent stays on
-            # main's own commit chain (each `git rev-list` entry is HEAD-first,
-            # so the first with an image is the closest): images are only built
-            # for main pushes, so a feature-branch commit pulled in by a merge
-            # must never be selected even though it's reachable from HEAD.
+            # Nearest built ancestor on the mainline. --first-parent stays on the
+            # dispatched ref's own commit chain (rev-list is HEAD-first, so the
+            # first with an image is the closest): images are only built for main
+            # pushes, so a feature-branch commit pulled in by a merge must never be
+            # selected even though it's reachable from HEAD. Stream commits into a
+            # `while read` loop and break at the first hit, so git stops early and
+            # the full SHA list is never materialized on long histories.
             tag=""
             digest=""
-            for sha in $(git rev-list --first-parent HEAD); do
+            while IFS= read -r sha; do
               d="$(digest_for "$sha")"
               if [ -n "$d" ]; then
                 tag="$sha"
                 digest="$d"
                 break
               fi
-            done
+            done < <(git rev-list --first-parent HEAD)
             if [ -z "$digest" ]; then
               echo "::error::No image found in $repo for HEAD or any ancestor commit. Has any build finished?"
               exit 1
