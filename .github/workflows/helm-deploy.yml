@@ -12,8 +12,9 @@ name: Deploy Helm Charts
 # on Helm 4 regenerates it in the runner and vendors the `common` library chart.
 #
 # Required repository secrets:
-#   DIGITALOCEAN_ACCESS_TOKEN - DO API token with Kubernetes + registry read access
-#                               (may be the same full-scope token used for DOCR_TOKEN)
+#   DOCR_TOKEN - DO API token with Kubernetes + registry read access. This is the
+#                same full-scope token used by docker-build-push.yml for registry
+#                login; doctl uses it here to fetch the kubeconfig and read digests.
 
 on:
   # Manual only. Deploys never run on their own: once the cluster is up, pods and
@@ -92,7 +93,7 @@ jobs:
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
         with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          token: ${{ secrets.DOCR_TOKEN }}
 
       - name: Configure kubeconfig for the cluster
         run: doctl kubernetes cluster kubeconfig save "${{ env.CLUSTER_NAME }}"
