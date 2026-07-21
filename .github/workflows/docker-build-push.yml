@@ -35,6 +35,8 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v6
         with:
+          # Full history so paths-filter can diff this push against its base;
+          # a shallow checkout would leave it unable to resolve the change set.
           fetch-depth: 0
 
       - name: Detect changed paths
@@ -47,11 +49,8 @@ jobs:
           # matches BOTH the bare submodule path and `<svc>/**` (the latter is
           # future-proofing for any in-repo files); a `<svc>/**`-only filter would
           # never match a pointer bump and the service would silently never build.
-          #
-          # DRY-RUN REMINDER: path-filter behavior against submodule bumps can't be
-          # proven without an actual run. When changing these filters, verify on a
-          # throwaway branch that (a) bumping one submodule builds only that service
-          # and (b) a `shared` change (root pom.xml) rebuilds all 10.
+          # Submodule-bump matching can't be proven statically -- verify filter
+          # changes on a throwaway branch before merging.
           filters: |
             # Shared build inputs: the parent POM, this workflow, and the submodule
             # map all affect every image, so a change here forces a full rebuild.
@@ -79,7 +78,7 @@ jobs:
             driver-location-generator driver-location-streamer gateway
             location-saver outbox-publisher-service ride-request
             simulation-service
-          # JSON array of filter keys that matched (always valid JSON, "[]" if none).
+          # Always a valid JSON array ("[]" when nothing matched), so jq is safe below.
           MATCHED: ${{ steps.filter.outputs.changes }}
           SHARED: ${{ steps.filter.outputs.shared }}
           EVENT: ${{ github.event_name }}
@@ -98,7 +97,9 @@ jobs:
 
   docker:
     needs: detect
-    # Skip cleanly when nothing service-related changed (empty matrix).
+    # Skip cleanly when nothing service-related changed: the output is a raw JSON
+    # string, and letting fromJSON produce an empty matrix is a hard error, so we
+    # string-compare against "[]" here rather than expanding it.
     if: ${{ needs.detect.outputs.services != '[]' }}
     runs-on: ubuntu-latest
     strategy:
