@@ -3,7 +3,7 @@
 
 project_name = "microgo-dev"
 region       = "fra1"
-k8s_version  = "1.34.5-do.1"
+k8s_version  = "1.34.8-do.3"
 
 node_size  = "s-2vcpu-2gb"
 node_count = 2
