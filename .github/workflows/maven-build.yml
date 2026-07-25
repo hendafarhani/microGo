@@ -29,3 +29,29 @@ jobs:
 
       - name: Maven build
         run: mvn -B ${{ inputs.maven_goal }}
+
+      # Integration tests use @Testcontainers(disabledWithoutDocker = true), which
+      # silently self-skips when no Docker daemon is present. That is fine locally,
+      # but in the pipeline a skipped integration test must fail the build so a
+      # missing Docker daemon can never let a green `verify` hide untested code.
+      - name: Fail if integration tests were skipped in CI
+        if: ${{ contains(inputs.maven_goal, 'verify') || contains(inputs.maven_goal, 'integration-test') }}
+        shell: bash
+        run: |
+          summaries=$(find . -path '*/target/failsafe-reports/failsafe-summary.xml' 2>/dev/null | sort)
+          if [ -z "$summaries" ]; then
+            echo "No Failsafe summary found - this module has no integration tests. Nothing to enforce."
+            exit 0
+          fi
+          rc=0
+          while IFS= read -r f; do
+            skipped=$(sed -n 's:.*<skipped>\([0-9]*\)</skipped>.*:\1:p' "$f")
+            completed=$(sed -n 's:.*<completed>\([0-9]*\)</completed>.*:\1:p' "$f")
+            skipped=${skipped:-0}; completed=${completed:-0}
+            echo "$f -> completed=$completed skipped=$skipped"
+            if [ "$skipped" -gt 0 ]; then
+              echo "::error file=$f::$skipped integration test(s) were SKIPPED in CI. Testcontainers ITs must run in the pipeline - ensure the Docker daemon is available on the runner."
+              rc=1
+            fi
+          done <<< "$summaries"
+          exit $rc
