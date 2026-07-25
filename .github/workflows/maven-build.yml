@@ -45,9 +45,13 @@ jobs:
           fi
           rc=0
           while IFS= read -r f; do
-            skipped=$(sed -n 's:.*<skipped>\([0-9]*\)</skipped>.*:\1:p' "$f")
-            completed=$(sed -n 's:.*<completed>\([0-9]*\)</completed>.*:\1:p' "$f")
-            skipped=${skipped:-0}; completed=${completed:-0}
+            skipped=$(sed -n 's:.*<skipped>\([0-9]\+\)</skipped>.*:\1:p' "$f" | head -n1)
+            completed=$(sed -n 's:.*<completed>\([0-9]\+\)</completed>.*:\1:p' "$f" | head -n1)
+            if [ -z "$skipped" ] || [ -z "$completed" ]; then
+              echo "::error file=$f::Unable to parse <completed>/<skipped> counts from failsafe-summary.xml"
+              rc=1
+              continue
+            fi
             echo "$f -> completed=$completed skipped=$skipped"
             if [ "$skipped" -gt 0 ]; then
               echo "::error file=$f::$skipped integration test(s) were SKIPPED in CI. Testcontainers ITs must run in the pipeline - ensure the Docker daemon is available on the runner."
