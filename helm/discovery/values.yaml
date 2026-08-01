@@ -13,8 +13,8 @@ component:
   name: discovery
   fullnameOverride: discovery
   replicaCount: 1
-  waitFor:
-    - { name: config, host: centralized-config, port: 8080 }
+  # No waitFor: discovery is the Eureka registry and has no config client on its
+  # classpath, so it must not be gated behind centralized-config.
   containerPort: 8082
   image:
     repository: registry.digitalocean.com/hendafarhani-microgo-registry/microgo-discovery
@@ -27,8 +27,6 @@ component:
   env:
     - name: SERVER_PORT
       value: "8082"
-    - name: SPRING_CONFIG_IMPORT
-      value: optional:configserver:http://centralized-config:8080
   readinessProbe:
     httpGet:
       path: /
