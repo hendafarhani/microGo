@@ -24,9 +24,9 @@ component:
     type: ClusterIP
     port: 8082
     targetPort: 8082
-  env:
-    - name: SERVER_PORT
-      value: "8082"
+  # No SERVER_PORT: discovery pins server.port=8082 in its own application.properties,
+  # and every sibling config hardcodes http://discovery:8082/eureka. The ports below are
+  # the cluster's view (what to expose and route to), not a second opinion on what to bind.
   readinessProbe:
     httpGet:
       path: /
