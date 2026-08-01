@@ -1,6 +1,6 @@
 # Jackson 2 → Jackson 3 migration status (microGo)
 
-Boot 4's framework serialization (REST responses and STOMP/WebSocket message converters)
+Spring Boot 4's framework serialization (REST responses and STOMP/WebSocket message converters)
 uses Jackson 3 (`tools.jackson.databind`). A Jackson 2 type
 (`com.fasterxml.jackson.databind.JsonNode` / `ObjectNode` / `ObjectMapper`) that reaches
 framework serialization is **not** treated as a JSON tree — Jackson 3 silently serializes
