@@ -99,9 +99,6 @@ services:
 
   discovery:
     build: ./discovery
-    depends_on:
-      centralized-config:
-        condition: service_healthy
     networks:
       - app-network
     ports:

@@ -13,8 +13,8 @@ component:
   name: discovery
   fullnameOverride: discovery
   replicaCount: 1
-  waitFor:
-    - { name: config, host: centralized-config, port: 8080 }
+  # No waitFor: discovery is the Eureka registry and has no config client on its
+  # classpath, so it must not be gated behind centralized-config.
   containerPort: 8082
   image:
     repository: registry.digitalocean.com/hendafarhani-microgo-registry/microgo-discovery
@@ -24,11 +24,9 @@ component:
     type: ClusterIP
     port: 8082
     targetPort: 8082
-  env:
-    - name: SERVER_PORT
-      value: "8082"
-    - name: SPRING_CONFIG_IMPORT
-      value: optional:configserver:http://centralized-config:8080
+  # No SERVER_PORT: discovery pins server.port=8082 in its own application.properties,
+  # and every sibling config hardcodes http://discovery:8082/eureka. The ports below are
+  # the cluster's view (what to expose and route to), not a second opinion on what to bind.
   readinessProbe:
     httpGet:
       path: /
