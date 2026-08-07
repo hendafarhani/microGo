@@ -218,7 +218,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      SPRING_CONFIG_IMPORT: optional:configserver:http://centralized-config:8080
+      SPRING_CONFIG_IMPORT: configserver:http://centralized-config:8080
     restart:
       always
 
